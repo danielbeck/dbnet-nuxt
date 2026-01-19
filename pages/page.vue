@@ -16,7 +16,7 @@
             </template>
             <h1 v-html="pageOrBlank.title"></h1>
 
-            <nav class="npnav">
+            <nav class="npnav" v-if="isPoolItem">
                 <div class="nav">
                     <template v-if="prevItem">
                         <router-link class="npbtn" :to="buildPoolItemUrl(prevItem, currentTag)"

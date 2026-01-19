@@ -6,13 +6,6 @@
                 <NuxtLink to="/">Home</NuxtLink>
             </li>
         </ul>
-        <ul>
-            <template v-for="item in nav[0]">
-                <li v-if="!item.noNav" :class="item.classes" :key="item.path">
-                    <NuxtLink :to="item.path">{{ item.name }}</NuxtLink>
-                </li>
-            </template>
-        </ul>
         <ul v-if="nav[1]">
             <li v-for="item in nav[1]" :key="item.path" :class="item.classes">
                 <NuxtLink :to="item.path">{{ item.name }}</NuxtLink>
