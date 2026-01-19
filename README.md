@@ -36,7 +36,7 @@ This runs `npm run generate` and then `./scripts/deploy.sh` to rsync `dist/` and
 
 ## npm Scripts (what they do)
 
-- `build`: Runs `nuxt build` to build the production server/app.
+- `build`: Runs `nuxt build` to build the production server/app. Not generally needed; we use `generate` for static files.
 - `clean`: Removes build and output artifacts (`.output`, `.nuxt`, `.vite`, `dist/*`).
 - `dev`: Runs `node scripts/generate-pool-cache.js && node scripts/generate-page-cache.js && nuxt dev` — generates local `.cache` data then starts Nuxt in development mode with hot-reload.
 - `generate`: Runs `nuxt generate` to prerender the site using `.cache` data.
@@ -74,6 +74,4 @@ npm run preview
 
 * There's a warning about mismatched ID types (string vs number) when editing a pool item.  The code functions as is, 
 but this should probably be resolved.
-* Immediately after adding a pool item, in-app navigation to the page works, but refreshing the page shows "Not found". Probably the cache is not being read correctly (the string-vs-number issue?)
-* add applescript to highlightjs
-* pool-list and other compiled content aren't statically rendered
+* Immediately after adding a pool item, in-app navigation to the new page works, but refreshing the new page shows "Not found". Probably the cache is not being read correctly (is it due to the string-vs-number ID issue?)

@@ -21,6 +21,7 @@ import bash from 'highlight.js/lib/languages/bash'
 import json from 'highlight.js/lib/languages/json'
 import php from 'highlight.js/lib/languages/php'
 import perl from 'highlight.js/lib/languages/perl'
+import applescript from 'highlight.js/lib/languages/applescript'
 import 'highlight.js/styles/github.css'
 
 hljs.registerLanguage('javascript', javascript)
@@ -33,6 +34,7 @@ hljs.registerLanguage('sh', bash)
 hljs.registerLanguage('json', json)
 hljs.registerLanguage('php', php)
 hljs.registerLanguage('perl', perl)
+hljs.registerLanguage('applescript', applescript)
 
 const Highlight = defineComponent({
     name: 'Highlight',
