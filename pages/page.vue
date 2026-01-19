@@ -1,10 +1,6 @@
 <template>
     <div>
-        <template v-if="loading && !currentUser">
-            <ClientOnly>
-                <Loading />
-            </ClientOnly>
-        </template>
+        <Loading v-if="loading && !currentUser" />
         <div v-else-if="pageOrBlank && pageOrBlank.title">
             <!-- Admin controls: for pool items show EditPool; for non-pool pages show both EditPage and (if tag) Add Pool -->
             <template v-if="currentUser">
@@ -48,7 +44,10 @@
                 </div>
             </div>
         </div>
-        <div v-else style="padding:2em;text-align:center;font-size:1.5em;">Not Found</div>
+        <div v-else>
+            <Loading v-if="loading" />
+            <div v-else style="padding:2em;text-align:center;font-size:1.5em;">Not Found</div>
+        </div>
     </div>
 </template>
 

@@ -30,7 +30,8 @@
             <label v-for="(tag, i) in editable.tags" :key="i" style="display: flex; align-items: center; gap: 0.5em;">
                 <span>{{ i === 0 ? 'Tags:' : '' }}</span>
                 <input v-model="editable.tags[i]">
-                <button type="button" @click="removeTag(i)" v-if="editable.tags.length > 1" style="margin-left: 0.5em;">&times;</button>
+                <button type="button" @click="removeTag(i)" v-if="editable.tags.length > 1"
+                    style="margin-left: 0.5em;">&times;</button>
             </label>
             <label><span></span><button @click="addTag">Add tag</button></label>
             <label><span>img:</span> <input type="text" v-model="editable.img"></label>

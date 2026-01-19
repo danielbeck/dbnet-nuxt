@@ -1,12 +1,9 @@
 <template>
     <div class="imagegrid">
         <div v-for="p in list" :key="p.id" class="grid" @mouseenter="hover($event)" @mouseleave="unhover($event)">
-            <NuxtLink v-if="isClient" :to="p.path">
+            <NuxtLink :to="p.path">
                 <img :src="p.thumbnail" :alt="p.title" width="124" height="124" />
             </NuxtLink>
-            <a v-else :href="p.path">
-                <img :src="p.thumbnail" :alt="p.title" width="124" height="124" />
-            </a>
             <div class="label"><span v-html="p.title"></span></div>
         </div>
     </div>
@@ -16,8 +13,7 @@
 <script setup>
 import { ref, getCurrentInstance } from 'vue'
 
-
-const isClient = typeof window !== 'undefined'
+// Register NuxtLink globally for SSG/prerender context
 
 const props = defineProps({
     list: Array
