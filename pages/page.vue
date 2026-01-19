@@ -304,21 +304,21 @@ function getPoolListForTag(t) {
         runtimeMap[String(it.id)] = it
     }
 
+    // Always return pool items sorted by date ascending (oldest first)
+    const sortByDateAsc = arr => arr.slice().sort((a, b) => (a.date || 0) - (b.date || 0))
     if (!t) {
         // archive / untagged: use full static list, but let runtime override and prepend runtime-only items
         const staticList = pool.slice()
         const merged = staticList.map(s => runtimeMap[String(s.id)] ? runtimeMap[String(s.id)] : s)
         const runtimeOnly = Object.values(runtimeMap).filter(r => !merged.find(m => String(m.id) === String(r.id)))
-        runtimeOnly.sort((a, b) => (b.date || 0) - (a.date || 0))
-        return runtimeOnly.concat(merged)
+        return sortByDateAsc(runtimeOnly.concat(merged))
     }
 
     // Filter static pool by tag, replace with runtime if available, and prepend runtime-only items
     const staticList = pool.filter(p => Array.isArray(p.tags) && p.tags.includes(t))
     const merged = staticList.map(s => runtimeMap[String(s.id)] ? runtimeMap[String(s.id)] : s)
     const runtimeOnly = Object.values(runtimeMap).filter(r => Array.isArray(r.tags) && r.tags.includes(t) && !merged.find(m => String(m.id) === String(r.id)))
-    runtimeOnly.sort((a, b) => (b.date || 0) - (a.date || 0))
-    return runtimeOnly.concat(merged)
+    return sortByDateAsc(runtimeOnly.concat(merged))
 }
 
 function buildPoolItemUrl(item, tagParam) {
