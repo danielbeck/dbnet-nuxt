@@ -181,31 +181,50 @@ function parseParts(input) {
         if (/^<Footnote/i.test(match)) {
             const open = match.match(/^<Footnote\b([^>]*)>/i)
             const inner = match.replace(/^<Footnote\b[^>]*>/i, '').replace(/<\/Footnote>$/i, '')
-            let num = 0
+            // parse attributes robustly (supports quoted and unquoted values and :/@ prefixes)
+            const props = {}
             if (open && open[1]) {
-                const nm = open[1].match(/:number\s*=\s*"?(\d+)"?/) || open[1].match(/number\s*=\s*"?(\d+)"?/)
-                if (nm) num = Number(nm[1])
+                const attrRe = /([:@]?[a-zA-Z0-9_-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^"'\s>]+))/g
+                let am
+                while ((am = attrRe.exec(open[1]))) {
+                    const name = am[1].replace(/^[:@]/, '')
+                    const val = am[2] || am[3] || am[4] || ''
+                    props[name] = val
+                }
             }
+            const num = props.number ? Number(props.number) : 0
             parts.push({ type: 'component', name: 'Footnote', props: { number: num, content: inner } })
         } else if (/^<(?:pool-list|PoolList)/i.test(match)) {
             const open = match.match(/^<(?:pool-list|PoolList)\b([^>]*)>/i)
             let attrs = open && open[1] ? open[1] : ''
-            // parse common attrs like tag
+            // parse attributes into props (supports quoted and unquoted values)
             const props = {}
-            const tagm = attrs.match(/:?tag\s*=\s*"?([^"\s>]+)"?/i)
-            if (tagm) props.tag = tagm[1]
-            // also accept data attributes or other simple string attrs if needed
+            const attrRe = /([:@]?[a-zA-Z0-9_-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^"'\s>]+))/g
+            let am
+            while ((am = attrRe.exec(attrs))) {
+                const name = am[1]
+                const val = am[2] || am[3] || am[4] || ''
+                const cleanName = name.replace(/^[:@]/, '')
+                props[cleanName] = val
+            }
             parts.push({ type: 'component', name: 'PoolList', props })
         } else {
             // highlightjs
-            const open = match.match(/^<highlightjs(\b[^>]*)>/i)
+            const open = match.match(/^<highlightjs\b([^>]*)>/i)
             const inner = match.replace(/^<highlightjs\b[^>]*>/i, '').replace(/<\/highlightjs>$/i, '')
-            let lang = 'javascript'
+            const props = {}
             if (open && open[1]) {
-                const lm = open[1].match(/language\s*=\s*"?([^"\s>]+)"?/i)
-                if (lm) lang = lm[1]
+                const attrRe = /([:@]?[a-zA-Z0-9_-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^"'\s>]+))/g
+                let am
+                while ((am = attrRe.exec(open[1]))) {
+                    const name = am[1].replace(/^[:@]/, '')
+                    const val = am[2] || am[3] || am[4] || ''
+                    props[name] = val
+                }
             }
-            parts.push({ type: 'component', name: 'Highlight', props: { language: lang, encoded: encodeBase64(inner) } })
+            if (!props.language) props.language = 'javascript'
+            if (!props.encoded && inner) props.encoded = encodeBase64(inner)
+            parts.push({ type: 'component', name: 'Highlight', props })
         }
         lastIndex = re.lastIndex
     }

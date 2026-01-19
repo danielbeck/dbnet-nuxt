@@ -8,6 +8,7 @@
     "dev": "node scripts/generate-pool-cache.js && node scripts/generate-page-cache.js && nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
+    "deploy": "npm run generate && ./scripts/deploy.sh",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {

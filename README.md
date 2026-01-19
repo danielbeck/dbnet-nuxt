@@ -55,9 +55,9 @@ npm run preview
 
 ## TODO
 
-* we need a deploy script that will push the static files to the server
-* put this in github, already
 * There's a warning about mismatched ID types (string vs number) when editing a pool item.  The code functions as is, 
 but this should probably be resolved.
-* Logs are emitted in strange places; consolidate them
 * Immediately after adding a pool item, in-app navigation to the page works, but refreshing the page shows "Not found". Probably the cache is not being read correctly (the string-vs-number issue?)
+* Need to generate RSS feeds and add to deploy script
+* Need to generate sitemap and add to deploy script
+* npm run dev should run npm run clean first
