@@ -89,6 +89,7 @@ if (import.meta.env.SSR) {
     pool = []
 }
 import routes from '~/helpers/routes.mjs'
+import { resolveIdTag as sharedResolveIdTag } from '@/helpers/resolveRoute.js'
 
 
 const props = defineProps({
@@ -137,86 +138,28 @@ function findPoolItemBySlug(slug) {
 
 // Helper to resolve id/tag from route if props are missing
 function resolveIdTag() {
-    // If props are present, use them
     if (props.id) return { id: props.id, tag: props.tag }
-    // Otherwise, resolve from route
     let slugArr
     if (route.params && route.params.slug !== undefined) {
         if (Array.isArray(route.params.slug)) {
             slugArr = route.params.slug
         } else if (typeof route.params.slug === 'string') {
-            // route.params.slug can be a single string that contains slashes
-            // e.g. 'photos/portraits/kimma.html' — split into segments
             slugArr = route.params.slug.split('/').filter(Boolean)
         } else {
             slugArr = []
         }
     } else if (route.path) {
-        // Fallback: parse from route.path
         slugArr = route.path.replace(/^\//, '').replace(/\/$/, '').split('/')
     } else {
         slugArr = []
     }
-    // Remove empty trailing elements (from trailing slash)
-    let arr = [...slugArr]
-    if (arr.length > 1 && arr[arr.length - 1] === '') arr.pop()
-
-    const pathSegments = arr.filter(Boolean)
-
-    const normalizeSegments = (p) => {
-        return String(p || '').replace(/^\//, '').replace(/\/$/, '').split('/').filter(Boolean)
-    }
-
-    // 1. Top-level exact match (compare segments for robustness)
-    for (const r of routes) {
-        const rSegs = normalizeSegments(r.path)
-        if (rSegs.length === pathSegments.length && rSegs.join('/') === pathSegments.join('/')) {
-            return { id: r.id, tag: r.tag || null }
-        }
-    }
-
-    // 2. Child / nested route matching: prefer route whose path segments are a prefix
-    if (pathSegments.length >= 2) {
-        const section = pathSegments[0]
-        // collect candidates whose first segment matches and which have a tag
-        const candidates = routes.map(r => ({ r, segs: normalizeSegments(r.path) }))
-            .filter(o => o.segs.length >= 1 && o.segs[0] === section && o.r.tag)
-
-        if (candidates.length) {
-            // find the candidate with the longest matching prefix (most specific)
-            let best = null
-            for (const c of candidates) {
-                const segs = c.segs
-                // ensure segs is a prefix of pathSegments
-                const prefix = pathSegments.slice(0, segs.length).join('/')
-                if (prefix === segs.join('/')) {
-                    if (!best || segs.length > best.segs.length) best = c
-                }
-            }
-
-            if (best) {
-                const tag = best.r.tag
-                const consumed = best.segs.length
-                let relativeSlug = pathSegments.slice(consumed).join('/')
-                // fallback to the 'slug' computed from everything after the first segment
-                if (!relativeSlug) relativeSlug = pathSegments.slice(1).join('/')
-                if (relativeSlug.endsWith('.html')) relativeSlug = relativeSlug.slice(0, -5)
-                const item = findPoolItemBySlugAndTag(relativeSlug, tag)
-                if (item) return { id: item.id, tag }
-            }
-        }
-
-        // archive fallback: /archive/[slug]
-        if (section === 'archive') {
-            const slug = pathSegments.slice(1).join('/')
-            let clean = slug
-            if (clean.endsWith('.html')) clean = clean.slice(0, -5)
-            const item = findPoolItemBySlug(clean)
-            if (item) return { id: item.id, tag: null }
-        }
-    }
-
-    return { id: null, tag: null }
+    return sharedResolveIdTag(
+        slugArr,
+        routes,
+        pool,
+        findPoolItemBySlugAndTag,
+        findPoolItemBySlug
+    )
 }
 
 const resolved = computed(() => resolveIdTag())
