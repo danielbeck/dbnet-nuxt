@@ -16,6 +16,11 @@
                 <NuxtLink :to="item.path">{{ item.name }}</NuxtLink>
             </li>
         </ul>
+        <ul v-if="nav[3]">
+            <li v-for="item in nav[3]" :key="item.path" :class="item.classes">
+                <NuxtLink :to="item.path">{{ item.name }}</NuxtLink>
+            </li>
+        </ul>
     </nav>
 </template>
 <script setup>
@@ -27,7 +32,7 @@ const route = useRoute()
 
 const nav = computed(() => {
     let navArr = [[], [], []];
-    let routeparts = route.path.split('/').filter(Boolean);
+    let currentPath = route.path;
 
     for (let r of siteRoutes) {
         if (r.meta && r.meta.noNav) continue;
@@ -38,6 +43,15 @@ const nav = computed(() => {
             classes: {}
         };
         let depth = parts.length;
+        // Highlight if current path starts with this route's path (excluding trailing slash for robustness)
+        let normalizedRoutePath = r.path.replace(/\/$/, '');
+        let normalizedCurrentPath = currentPath.replace(/\/$/, '');
+        if (
+            normalizedRoutePath === '' ? normalizedCurrentPath === '' :
+            normalizedCurrentPath === normalizedRoutePath || normalizedCurrentPath.startsWith(normalizedRoutePath + '/')
+        ) {
+            link.classes = { active: true };
+        }
         navArr[depth] = navArr[depth] || [];
         navArr[depth].push(link);
     }
