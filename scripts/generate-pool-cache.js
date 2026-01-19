@@ -27,7 +27,7 @@ async function main() {
         const pool = await fetchPool();
         fs.mkdirSync('./.cache', { recursive: true });
         fs.writeFileSync(OUT_PATH, JSON.stringify(pool, null, 2));
-        console.log('API data cached to', OUT_PATH);
+        // ...existing code...
     } catch (e) {
         console.error('Failed to fetch API data:', e);
         process.exit(1);

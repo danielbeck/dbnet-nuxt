@@ -51,9 +51,6 @@ async function getPrerenderRoutes() {
 if (import.meta.url === `file://${process.argv[1]}`) {
     (async () => {
         const routes = await getPrerenderRoutes();
-        for (const route of routes) {
-            console.log(route);
-        }
     })();
 }
 

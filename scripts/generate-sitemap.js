@@ -63,16 +63,14 @@ async function main() {
             }
         }
         fs.writeFileSync(SITEMAP_FILE, urls.join('\n'));
-        console.log('Sitemap generated.');
+        // ...existing code...
         let totalDynamic = 0;
         for (const p of routes) {
             if (p.tag) {
-                console.log(`[SUMMARY] Dynamic URLs for ${p.path}: ${dynamicCounts[p.path] || 0}`);
                 totalDynamic += dynamicCounts[p.path] || 0;
             }
         }
-        console.log(`[SUMMARY] Total dynamic URLs: ${totalDynamic}`);
-        console.log(`[SUMMARY] Total URLs in sitemap: ${urls.length}`);
+        // ...existing code...
     } catch (e) {
         console.error('Failed to generate sitemap:', e);
         process.exit(1);

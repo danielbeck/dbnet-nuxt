@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useUserStore } from './user'
 import { API_BASE } from '@/helpers/api'
 import { fromDatetimeLocal } from '@/helpers'
+import { mergeCache, removeFromCache, syncCacheToServer } from '@/helpers/cache.js'
 // Prefer using the static expanded page cache for dev hydration parity
 let pagesCache = []
 try {
@@ -80,37 +81,18 @@ export const usePageStore = defineStore('page', () => {
         const result = await response.json()
         // Update in-memory pagesCache so edits are immediately reflected
         try {
-            const incoming = Array.isArray(result) ? result : [result]
-            for (const it of incoming) {
-                try { it.id = String(it.id) } catch (e) { }
-                const idx = pagesCache.findIndex(p => String(p.id) === String(it.id))
-                if (idx >= 0) pagesCache[idx] = it
-                else pagesCache.push(it)
-            }
+            mergeCache(pagesCache, result, 'id')
         } catch (e) {
-            console.warn('[page.js] failed to merge pagesCache in-memory', e)
+            // ...existing code...
         }
         processPages(result)
         // Try to update local cache on the dev/server so .cache/pages.json reflects edits
         try {
             const payload = Array.isArray(result) ? { items: result } : { items: [result] }
             const url = (typeof window !== 'undefined') ? (window.location.origin + '/api/cache/pages') : '/api/cache/pages'
-            const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-            try {
-                console.log('[cache] POST url:', url)
-                console.log('[cache] response url:', resp.url, 'status:', resp.status)
-                const text = await resp.text().catch(() => '')
-                try {
-                    const json = text ? JSON.parse(text) : null
-                    console.log('[cache] response body (json):', json)
-                } catch (e) {
-                    console.log('[cache] response body (text):', text)
-                }
-            } catch (e) {
-                console.warn('[cache] error reading response', e)
-            }
+            await syncCacheToServer(url, payload)
         } catch (e) {
-            console.error('[cache] error posting to /api/cache/pages', e)
+            // ...existing code...
         }
     }
 
@@ -138,13 +120,13 @@ export const usePageStore = defineStore('page', () => {
         try {
             const payload = { remove: [String(id)] }
             const url = (typeof window !== 'undefined') ? (window.location.origin + '/api/cache/pages') : '/api/cache/pages'
-            await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+            await syncCacheToServer(url, payload)
         } catch (e) {
-            console.warn('[cache] error posting delete to /api/cache/pages', e)
+            // ...existing code...
         }
         // remove from pagesCache in-memory
         try {
-            pagesCache = pagesCache.filter(p => String(p.id) !== String(id))
+            pagesCache = removeFromCache(pagesCache, id, 'id')
         } catch (e) { }
 
         delete page.value[id]
@@ -155,7 +137,6 @@ export const usePageStore = defineStore('page', () => {
     function processPages(payload) {
         for (let item of payload) {
             if (!item || typeof item !== 'object' || !item.id) {
-                console.warn('[page.js] Skipping invalid page item:', item)
                 continue
             }
             // If a static expanded page exists in the on-disk cache, prefer its body

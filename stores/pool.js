@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useUserStore } from './user'
 import { API_BASE } from '@/helpers/api'
 import { fromDatetimeLocal } from '@/helpers'
+import { mergeCache, removeFromCache, syncCacheToServer } from '@/helpers/cache.js'
 
 export const usePoolStore = defineStore('pool', () => {
     // State
@@ -105,32 +106,17 @@ export const usePoolStore = defineStore('pool', () => {
             // Update local cache on the server (if available) so .cache/pool.json stays up-to-date
             try {
                 const payload = Array.isArray(result) ? { items: result } : { items: [result] }
-                // make origin explicit to avoid ambiguous relative routing in some environments
                 const url = (typeof window !== 'undefined') ? (window.location.origin + '/api/cache/pool') : '/api/cache/pool'
-                const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-                // Log response details for debugging
-                try {
-                    console.log('[cache] POST url:', url)
-                    console.log('[cache] response url:', resp.url, 'status:', resp.status)
-                    const text = await resp.text().catch(() => '')
-                    try {
-                        const json = text ? JSON.parse(text) : null
-                        console.log('[cache] response body (json):', json)
-                    } catch (e) {
-                        console.log('[cache] response body (text):', text)
-                    }
-                } catch (e) {
-                    console.warn('[cache] error reading response', e)
-                }
+                await syncCacheToServer(url, payload)
             } catch (e) {
-                console.error('[cache] error posting to /api/cache/pool', e)
+                // ...existing code...
             }
 
             // Refresh the pool list in-memory so UI reflects the newly added/edited item
             try {
                 await getAll()
             } catch (e) {
-                console.warn('[pool] getAll() failed after edit', e)
+                // ...existing code...
             }
 
             return { success: true }
@@ -158,10 +144,9 @@ export const usePoolStore = defineStore('pool', () => {
         try {
             const payload = { remove: [String(id)] }
             const url = (typeof window !== 'undefined') ? (window.location.origin + '/api/cache/pool') : '/api/cache/pool'
-            const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-            try { console.log('[cache] delete POST status:', resp.status) } catch (e) { }
+            await syncCacheToServer(url, payload)
         } catch (e) {
-            console.warn('[cache] error posting delete to /api/cache/pool', e)
+            // ...existing code...
         }
 
         // Remove from in-memory map for both numeric and string keys

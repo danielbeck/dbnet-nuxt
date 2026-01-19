@@ -139,7 +139,6 @@ onMounted(() => {
 
     // mount compiled component placeholders (Highlight, PoolList, etc.) with parent app context
     const compiledPlaceholders = Array.from(root.value.querySelectorAll('[data-component]'))
-    console.log('[CompiledContent] found placeholders:', compiledPlaceholders.length)
     compiledPlaceholders.forEach((el, i) => {
         try {
             const name = el.getAttribute('data-component')
@@ -150,7 +149,6 @@ onMounted(() => {
             if (name === 'Highlight') comp = Highlight
             else if (name === 'PoolList') comp = PoolList
             else if (name === 'Footnote') comp = Footnote
-            console.log('[CompiledContent] mounting placeholder', i, name, props)
             if (comp) {
                 const vnode = createVNode(comp, props)
                 if (instance && instance.appContext) vnode.appContext = instance.appContext

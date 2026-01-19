@@ -138,7 +138,7 @@ async function main() {
 
     fs.mkdirSync(path.dirname(OUT_PATH), { recursive: true })
     fs.writeFileSync(OUT_PATH, JSON.stringify(pages, null, 2))
-    console.log(`Wrote ${OUT_PATH} with ${pages.length} pages.`)
+    // ...existing code...
 }
 
 main().catch(e => { console.error(e); process.exit(1) })
