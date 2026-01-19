@@ -1,0 +1,52 @@
+html {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
+*,
+*:before,
+*:after {
+    box-sizing: inherit;
+}
+
+@import url('//fonts.googleapis.com/css?family=Asap:400,700,400italic,700italic|Alegreya+Sans:400,700');
+
+input,
+textarea {
+    font-size: 14px;
+    padding: 0.2em;
+    border: 1px solid #CCC;
+    border-radius: 3px;
+    font-family: monospace
+}
+
+input:disabled,
+textarea:disabled {
+    opacity: 0.3;
+}
+
+textarea {
+    min-height: 300px;
+}
+
+label {
+    width: 100%;
+    margin: 0.2em;
+    display: flex;
+}
+
+label input,
+label textarea {
+    width: 80%;
+    flex-grow: 1;
+}
+
+label span {
+    text-align: right;
+    min-width: 100px;
+    margin: 0.2em;
+}

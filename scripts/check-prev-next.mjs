@@ -1,0 +1,24 @@
+import fs from 'fs';
+import routes from '../helpers/routes.mjs';
+const pool = JSON.parse(fs.readFileSync(new URL('../.cache/pool.json', import.meta.url)));
+const id = process.argv[2] || '1377';
+const tag = process.argv[3] || 'blog';
+const staticList = pool.filter(p => Array.isArray(p.tags) && p.tags.includes(tag));
+staticList.sort((a, b) => (b.date || 0) - (a.date || 0));
+const idx = staticList.findIndex(p => String(p.id) === String(id));
+const prev = idx > 0 ? staticList[idx - 1] : null;
+const next = idx >= 0 && idx < staticList.length - 1 ? staticList[idx + 1] : null;
+const routeForTag = routes.find(r => r.tag === tag);
+const build = (item) => {
+    if (!item) return null;
+    if (!routeForTag) return `/archive/${item.slug}.html`;
+    const p = String(routeForTag.path).replace(/^\//, '').replace(/\/$/, '');
+    return `/${p}/${item.slug}/`;
+};
+console.log('id', id);
+console.log('tag', tag);
+console.log('index', idx);
+console.log('prev', prev ? `${prev.id}:${prev.slug}` : null);
+console.log('next', next ? `${next.id}:${next.slug}` : null);
+console.log('prevUrl', build(prev));
+console.log('nextUrl', build(next));

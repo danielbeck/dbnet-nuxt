@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /demo
+Disallow: /supersize
+Disallow: /api
+Disallow: /audio
+Allow: /
+Sitemap: https://danielbeck.net/sitemap.txt

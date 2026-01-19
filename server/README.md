@@ -1,0 +1,1 @@
+This is for the dev server.  Public API endpoints are stored in /public/api
