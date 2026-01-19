@@ -4,6 +4,7 @@
 import fs from 'fs'
 import fetch from 'node-fetch'
 import path from 'path'
+import { expandPoolPlaceholders } from '../helpers/expandPool.js'
 
 const API_URL = 'https://danielbeck.net/api/page.php'
 const POOL_CACHE = path.resolve('.cache/pool.json')
@@ -51,15 +52,6 @@ async function main() {
     const res = await fetch(API_URL)
     if (!res.ok) throw new Error('Failed to fetch page data')
     const pages = await res.json()
-
-    // attempt to read pool cache so we can expand <pool-list> placeholders
-    let pool = []
-    try {
-        const raw = fs.readFileSync(POOL_CACHE, 'utf8')
-        pool = JSON.parse(raw)
-    } catch (e) {
-        console.warn('Warning: .cache/pool.json not found or invalid; pool lists will be left as placeholders')
-    }
 
     const expandPoolList = (attrs) => {
         const tagAttr = attrs.tag || ''
@@ -129,20 +121,19 @@ async function main() {
         }).join('\n')
     }
 
-    // replace pool-list occurrences in page bodies
-    const re = /<pool-list\b([^>]*)>(?:<\/pool-list>)?/gi
+    // attempt to read pool cache so we can expand <pool-list> placeholders
+    let pool = []
+    try {
+        const raw = fs.readFileSync(POOL_CACHE, 'utf8')
+        pool = JSON.parse(raw)
+    } catch (e) {
+        console.warn('Warning: .cache/pool.json not found or invalid; pool lists will be left as placeholders')
+    }
+
+    // replace pool-list occurrences in page bodies using shared helper
     for (const p of pages) {
         if (!p || typeof p.body !== 'string') continue
-        p.body = p.body.replace(re, (m, attrStr) => {
-            try {
-                const attrs = parseAttrs(attrStr || '')
-                // if no pool cache, leave original
-                if (!pool || pool.length === 0) return m
-                return expandPoolList(attrs)
-            } catch (e) {
-                return m
-            }
-        })
+        p.body = expandPoolPlaceholders(p.body, pool)
     }
 
     fs.mkdirSync(path.dirname(OUT_PATH), { recursive: true })

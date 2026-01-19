@@ -12,6 +12,7 @@ import { useRouter } from 'vue-router'
 import Footnote from '~/components/Footnote.vue'
 import PoolList from '~/components/PoolList.vue'
 import { preprocessFootnotes } from '~/helpers/footnote.js'
+import { expandPoolPlaceholders } from '~/helpers/expandPool.js'
 import hljs from 'highlight.js/lib/core'
 import javascript from 'highlight.js/lib/languages/javascript'
 import xml from 'highlight.js/lib/languages/xml'
@@ -83,6 +84,24 @@ const Highlight = defineComponent({
     }
 })
 
+let staticPool = []
+if (import.meta.env.SSR) {
+    try {
+        const fs = await import('fs')
+        const path = await import('path')
+        try {
+            const rawPool = fs.readFileSync(path.resolve('.cache/pool.json'), 'utf8')
+            staticPool = JSON.parse(rawPool)
+        } catch (e) {
+            staticPool = []
+        }
+    } catch (e) {
+        staticPool = []
+    }
+} else {
+    staticPool = []
+}
+
 const props = defineProps({ input: String })
 const root = ref(null)
 const mountedPlaceholders = []
@@ -100,6 +119,7 @@ function decodeBase64(s) {
 onMounted(() => {
     if (!root.value) return
     const instance = getCurrentInstance()
+    const parentRouter = (() => { try { return useRouter() } catch { return null } })()
 
     // mount footnote placeholders using parent app context so they resolve plugins
     const placeholders = root.value.querySelectorAll('.footnote-placeholder')
@@ -107,10 +127,14 @@ onMounted(() => {
         const num = parseInt(el.getAttribute('data-number') || '0', 10)
         const encoded = el.getAttribute('data-content') || ''
         const content = decodeBase64(encoded)
-        const vnode = createVNode(Footnote, { number: num, content })
-        if (instance && instance.appContext) vnode.appContext = instance.appContext
-        render(vnode, el)
-        mountedPlaceholders.push({ el })
+        try {
+            const vnode = createVNode(Footnote, { number: num, content })
+            if (instance && instance.appContext) vnode.appContext = instance.appContext
+            render(vnode, el)
+            mountedPlaceholders.push({ el, vnode })
+        } catch (e) {
+            console.warn('[CompiledContent] failed to mount footnote', e && e.message ? e.message : e, el)
+        }
     })
 
     // mount compiled component placeholders (Highlight, PoolList, etc.) with parent app context
@@ -130,9 +154,9 @@ onMounted(() => {
             if (comp) {
                 const vnode = createVNode(comp, props)
                 if (instance && instance.appContext) vnode.appContext = instance.appContext
-                render(vnode, el)
+                try { render(vnode, el) } catch (e) { console.warn('[CompiledContent] render failed', e) }
                 try { el.setAttribute('data-mounted', '1') } catch (e) { }
-                mountedPlaceholders.push({ el })
+                mountedPlaceholders.push({ el, vnode })
             }
         } catch (e) {
             console.warn('[CompiledContent] failed to mount placeholder', i, e && e.message ? e.message : e, el)
@@ -219,6 +243,15 @@ function parseParts(input) {
     if (!input) return parts
     // preprocess footnotes first (converts to <Footnote :number="N">content</Footnote>)
     let processed = preprocessFootnotes(input)
+    // On server, expand <pool-list> placeholders into static HTML using the
+    // same helper the static generator uses so SSR output matches generated pages.
+    if (import.meta.env.SSR) {
+        try {
+            processed = expandPoolPlaceholders(processed, staticPool)
+        } catch (e) {
+            // ignore and continue with original processed HTML
+        }
+    }
     // Replace <router-link> and <nuxt-link> with plain anchors for SSR output
     processed = processed.replace(/<(?:router-link|nuxt-link)\b([^>]*)>([\s\S]*?)<\/(?:router-link|nuxt-link)>/gi, (m, attrs, inner) => {
         const tm = attrs.match(/:?to\s*=\s*(["']?)([^"'\s>]+)\1/i)
@@ -232,6 +265,11 @@ function parseParts(input) {
         if (attrs) {
             const nm = attrs.match(/:number\s*=\s*"?(\d+)"?/) || attrs.match(/number\s*=\s*"?(\d+)"?/)
             if (nm) num = Number(nm[1])
+        }
+        // On SSR, include the rendered footnote HTML inside the placeholder
+        // so static output contains the footnote content for indexing.
+        if (import.meta.env.SSR) {
+            return `<span class="footnote-placeholder" data-number="${num}" data-content="${encodeBase64(inner)}">${inner}</span>`
         }
         return `<span class="footnote-placeholder" data-number="${num}" data-content="${encodeBase64(inner)}"></span>`
     })

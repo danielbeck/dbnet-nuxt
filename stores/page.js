@@ -78,6 +78,18 @@ export const usePageStore = defineStore('page', () => {
         }
 
         const result = await response.json()
+        // Update in-memory pagesCache so edits are immediately reflected
+        try {
+            const incoming = Array.isArray(result) ? result : [result]
+            for (const it of incoming) {
+                try { it.id = String(it.id) } catch (e) { }
+                const idx = pagesCache.findIndex(p => String(p.id) === String(it.id))
+                if (idx >= 0) pagesCache[idx] = it
+                else pagesCache.push(it)
+            }
+        } catch (e) {
+            console.warn('[page.js] failed to merge pagesCache in-memory', e)
+        }
         processPages(result)
         // Try to update local cache on the dev/server so .cache/pages.json reflects edits
         try {
@@ -121,6 +133,19 @@ export const usePageStore = defineStore('page', () => {
                 nonce: newNonce
             })
         }
+
+        // Update in-memory and on-disk caches so deleted page is removed from .cache/pages.json
+        try {
+            const payload = { remove: [String(id)] }
+            const url = (typeof window !== 'undefined') ? (window.location.origin + '/api/cache/pages') : '/api/cache/pages'
+            await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        } catch (e) {
+            console.warn('[cache] error posting delete to /api/cache/pages', e)
+        }
+        // remove from pagesCache in-memory
+        try {
+            pagesCache = pagesCache.filter(p => String(p.id) !== String(id))
+        } catch (e) { }
 
         delete page.value[id]
         page.value = { ...page.value }

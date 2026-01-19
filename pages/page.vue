@@ -63,8 +63,32 @@ import EditPage from '@/components/EditPage.vue'
 import EditPool from '@/components/EditPool.vue'
 
 import Loading from '@/components/Loading.vue'
-import pool from '../.cache/pool.json'
-import pagesCache from '../.cache/pages.json'
+let pool = []
+let pagesCache = []
+if (import.meta.env.SSR) {
+    try {
+        const fs = await import('fs')
+        const path = await import('path')
+        try {
+            const rawPool = fs.readFileSync(path.resolve('.cache/pool.json'), 'utf8')
+            pool = JSON.parse(rawPool)
+        } catch (e) {
+            pool = []
+        }
+        try {
+            const raw = fs.readFileSync(path.resolve('.cache/pages.json'), 'utf8')
+            pagesCache = JSON.parse(raw)
+        } catch (e) {
+            pagesCache = []
+        }
+    } catch (e) {
+        pool = []
+        pagesCache = []
+    }
+} else {
+    pagesCache = []
+    pool = []
+}
 import routes from '~/helpers/routes.mjs'
 
 
@@ -203,8 +227,9 @@ const tag = computed(() => resolved.value.tag)
 
 import { ref } from 'vue'
 
-// Start `loading` as false so SSR and client initial render match
-const loading = ref(false)
+// Start `loading` as false on SSR but true on client so initial client-side
+// navigations show the loading UI instead of flashing "Not Found".
+const loading = ref(import.meta.env.SSR ? false : true)
 const isSSR = import.meta.env.SSR
 const getPoolItem = (id) => pool.find(p => String(p.id) === String(id)) || null
 const getPageItem = (id) => pagesCache.find(p => String(p.id) === String(id)) || null
@@ -294,6 +319,10 @@ if (!import.meta.env.SSR) {
     }
     onMounted(() => {
         init()
+    })
+    // Re-run init on client-side route navigations that reuse this component
+    watch(() => route.fullPath, (n, o) => {
+        try { init() } catch (e) { }
     })
 }
 

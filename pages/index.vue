@@ -1,6 +1,6 @@
 <template>
     <div>
-        <template v-if="!isSSR && page === false && !currentUser">
+        <template v-if="loading">
             <ClientOnly>
                 <Loading />
             </ClientOnly>
@@ -18,12 +18,24 @@
 </template>
 
 <script setup>
-import { computed, watch, onBeforeMount, nextTick } from 'vue'
+import { computed, watch, onBeforeMount, nextTick, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { usePageStore } from '@/stores/page'
 import { usePoolStore } from '@/stores/pool'
 import { useUserStore } from '@/stores/user'
-import pagesCache from '../.cache/pages.json'
+let pagesCache = []
+if (import.meta.env.SSR) {
+    try {
+        const fs = await import('fs')
+        const path = await import('path')
+        const raw = fs.readFileSync(path.resolve('.cache/pages.json'), 'utf8')
+        pagesCache = JSON.parse(raw)
+    } catch (e) {
+        pagesCache = []
+    }
+} else {
+    pagesCache = []
+}
 import CompiledContent from '@/components/CompiledContent.vue'
 import EditPage from '@/components/EditPage.vue'
 import EditPool from '@/components/EditPool.vue'
@@ -36,6 +48,10 @@ const route = useRoute()
 
 const pages = computed(() => pageStore.page)
 const currentUser = computed(() => userStore.currentUser)
+
+// Start `loading` as false on SSR but true on client so initial client-side
+// navigations show the loading UI instead of flashing "Not Found".
+const loading = ref(import.meta.env.SSR ? false : true)
 
 // Home page id is 'Home' per routes
 const getPageItem = (id) => pagesCache.find(p => String(p.id) === String(id)) || null
@@ -68,20 +84,29 @@ watch(page, (p) => {
 }, { immediate: true })
 
 const init = () => {
+    loading.value = true
     const promises = []
     promises.push(pageStore.get('Home'))
     // Ensure homepage pool data is requested on client so interactive fragments can hydrate
     if (route.path === '/') {
-        poolStore.getHomepage()
+        promises.push(poolStore.getHomepage())
     }
     Promise.all(promises).then(() => {
+        loading.value = false
         nextTick(() => {
             if (typeof document !== 'undefined') document.dispatchEvent(new Event('prerender-trigger'))
         })
+    }).catch(() => {
+        loading.value = false
     })
 }
 
 onBeforeMount(() => {
     init()
+})
+
+// Re-run init on client-side navigations to the home route
+watch(() => route.fullPath, (n, o) => {
+    try { init() } catch (e) { }
 })
 </script>

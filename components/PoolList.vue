@@ -102,6 +102,24 @@ const poolList = computed(() => {
         if (ourTags.length === 0 || hasTagsInCommon(item.tags, ourTags)) {
             const clone = { ...item }
             clone.path = props.path ? props.path + clone.slug + '.html' : clone.slug + '.html'
+            // Normalize date from static cache (strings of epoch ms) into Date objects
+            try {
+                if (clone.date !== undefined && clone.date !== null) {
+                    if (typeof clone.date === 'string' && /^\d+$/.test(clone.date)) {
+                        clone.date = new Date(Number(clone.date))
+                    } else if (typeof clone.date === 'number') {
+                        clone.date = new Date(clone.date)
+                    } else if (!(clone.date instanceof Date)) {
+                        const parsed = Date.parse(String(clone.date))
+                        clone.date = isNaN(parsed) ? new Date(0) : new Date(parsed)
+                    }
+                } else {
+                    clone.date = new Date(0)
+                }
+            } catch (e) {
+                clone.date = new Date(0)
+            }
+            if (!Array.isArray(clone.tags)) clone.tags = Array.isArray(item.tags) ? item.tags : []
             ret.push(clone)
         }
     }
