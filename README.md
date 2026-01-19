@@ -12,9 +12,11 @@ This is the Nuxt 3 static site version of dbnet.
 
 1. **Fetch and cache API data:**
 	```sh
-	node scripts/fetch-api-cache.js
+	node scripts/generate-pool-cache.js
+    node scripts/generate-pages-cache.js
 	```
-	This will save the latest API data to `.cache/pool.json`.
+	This will save the latest API data to `.cache/`.
+    `npm run dev` does this automatically on start.
 
 2. **Generate the static site:**
 	```sh
@@ -34,41 +36,28 @@ This is the Nuxt 3 static site version of dbnet.
 
 
 ## Notes
-- You can update the API cache at any time by rerunning the fetch script.
-- The original dbnet/ project is included for reference only and should not be modified from this project.
+- Server logs are stored in .cache/request-log.log
 
 ## Production
 
 Build the application for production:
 
 ```bash
-# npm
 npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
 ```
 
 Locally preview production build:
 
 ```bash
-# npm
 npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+
+## TODO
+
+* we need a deploy script that will push the static files to the server
+* put this in github, already
+* There's a warning about mismatched ID types (string vs number) when editing a pool item.  The code functions as is, 
+but this should probably be resolved.
+* Logs are emitted in strange places; consolidate them
+* Immediately after adding a pool item, in-app navigation to the page works, but refreshing the page shows "Not found". Probably the cache is not being read correctly (the string-vs-number issue?)

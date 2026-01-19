@@ -15,16 +15,7 @@ export default defineEventHandler(async (event) => {
     const incoming = body.items || (body.item ? [body.item] : [])
     if (!Array.isArray(incoming)) throw createError({ statusCode: 400, statusMessage: 'invalid payload' })
 
-    // Log incoming request for debugging (append to .cache/cache-updates.log)
-    try {
-        const logDir = path.resolve(process.cwd(), '.cache')
-        fs.mkdirSync(logDir, { recursive: true })
-        const logFile = path.join(logDir, 'cache-updates.log')
-        const entry = { ts: new Date().toISOString(), route: '/api/cache/pages', incoming }
-        fs.appendFileSync(logFile, JSON.stringify(entry) + '\n', 'utf8')
-    } catch (e) {
-        // ignore logging errors
-    }
+    // logging of incoming payloads removed
 
     const byId = new Map(current.map(i => [String(i.id), i]))
     for (const it of incoming) {

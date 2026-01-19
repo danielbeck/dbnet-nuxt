@@ -5,7 +5,7 @@
   "scripts": {
     "build": "nuxt build",
     "clean": "rimraf .output .nuxt .vite dist",
-    "dev": "nuxt dev",
+    "dev": "node scripts/generate-pool-cache.js && node scripts/generate-page-cache.js && nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
