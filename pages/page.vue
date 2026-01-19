@@ -38,12 +38,10 @@
             </nav>
 
             <div @touchstart="touchStart" @touchend="touchEnd">
-                <!-- Render full HTML during SSR so static output contains the page text for indexing. -->
-                <div v-if="isSSR" v-html="pageOrBlank.body"></div>
-                <!-- On client, mount interactive components via CompiledContent -->
-                <ClientOnly v-else>
-                    <CompiledContent :input="pageOrBlank.body" />
-                </ClientOnly>
+                <!-- Render page body via CompiledContent on both server and client.
+                     CompiledContent renders raw HTML during SSR and mounts interactive
+                     fragments on the client, keeping DOM structure consistent. -->
+                <CompiledContent :input="pageOrBlank.body" />
 
                 <div v-if="pageOrBlank.img" class="pageimage">
                     <img :src="pageOrBlank.img" :alt="'Photo of ' + pageOrBlank.title" />
@@ -229,7 +227,16 @@ const page = computed(() => {
             return poolState[id.value]
         }
         if (pages.value && typeof pages.value === 'object' && pages.value[id.value]) {
-            return pages.value[id.value]
+            const runtimePage = pages.value[id.value]
+            try {
+                if (runtimePage && typeof runtimePage.body === 'string' && /<(?:pool-list|PoolList)\b/i.test(runtimePage.body)) {
+                    const staticPage = getPageItem(id.value)
+                    if (staticPage && typeof staticPage.body === 'string' && staticPage.body.length) return staticPage
+                }
+            } catch (e) {
+                // if any error, fall back to runtimePage
+            }
+            return runtimePage
         }
         // If stores are not yet populated on client, fall back to static caches
         const poolItemClientFallback = getPoolItem(id.value)

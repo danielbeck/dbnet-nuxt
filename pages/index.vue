@@ -9,12 +9,10 @@
             <EditPage v-if="currentUser" :id="pageOrBlank.id" />
             <EditPool v-if="currentUser" />
             <h1 v-html="pageOrBlank.title"></h1>
-            <!-- Render raw HTML during SSR so static output contains the page text for indexing -->
-            <div v-if="isSSR" v-html="pageOrBlank.body"></div>
-            <!-- On client, mount interactive components via CompiledContent -->
-            <ClientOnly v-else>
-                <CompiledContent :input="pageOrBlank.body" />
-            </ClientOnly>
+            <!-- Render page body via CompiledContent on both server and client.
+                 CompiledContent renders raw HTML during SSR and mounts interactive
+                 fragments on the client, keeping DOM structure consistent. -->
+            <CompiledContent :input="pageOrBlank.body" />
         </div>
     </div>
 </template>
@@ -42,14 +40,22 @@ const currentUser = computed(() => userStore.currentUser)
 // Home page id is 'Home' per routes
 const getPageItem = (id) => pagesCache.find(p => String(p.id) === String(id)) || null
 const page = computed(() => {
-    // During SSR, prefer the on-disk static cache so prerender output contains the page text
-    if (import.meta.env.SSR) {
-        const staticItem = getPageItem('Home')
-        if (staticItem && typeof staticItem === 'object') return staticItem
-        // prefer runtime store if present, otherwise return a blank object (never `false`)
-        return pages.value['Home'] || { id: 'Home', title: '', body: '', tag: '' }
+    // Prefer runtime store when present. If the runtime page body still contains
+    // <pool-list> placeholders (not yet expanded), prefer the on-disk static
+    // cache so client initial render matches SSR and we don't replace expanded
+    // HTML with placeholder-only markup.
+    const staticItem = getPageItem('Home')
+    if (pages.value && pages.value['Home']) {
+        const runtimePage = pages.value['Home']
+        try {
+            if (runtimePage && typeof runtimePage.body === 'string' && /<(?:pool-list|PoolList)\b/i.test(runtimePage.body)) {
+                if (staticItem && typeof staticItem === 'object') return staticItem
+            }
+        } catch (e) { }
+        return runtimePage
     }
-    return pages.value['Home'] || { id: 'Home', title: '', body: '', tag: '' }
+    if (staticItem && typeof staticItem === 'object') return staticItem
+    return { id: 'Home', title: '', body: '', tag: '' }
 })
 const pageOrBlank = computed(() => page.value && typeof page.value === 'object' ? page.value : { id: 'Home', title: '', body: '', tag: '' })
 

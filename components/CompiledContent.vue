@@ -1,14 +1,13 @@
 <template>
     <div ref="root" class="compiled-content-root">
         <template v-for="(part, idx) in parts" :key="idx">
-            <div v-if="part.type === 'html'" v-html="part.html"></div>
-            <component v-else-if="part.type === 'component'" :is="componentMap[part.name]" v-bind="part.props" />
+            <div v-html="part.html"></div>
         </template>
     </div>
 </template>
 
 <script setup>
-import { computed, defineComponent, h, ref, onMounted, onBeforeUnmount, createApp } from 'vue'
+import { computed, defineComponent, h, ref, onMounted, onBeforeUnmount, createVNode, render, getCurrentInstance } from 'vue'
 import { useRouter } from 'vue-router'
 import Footnote from '~/components/Footnote.vue'
 import PoolList from '~/components/PoolList.vue'
@@ -86,8 +85,9 @@ const Highlight = defineComponent({
 
 const props = defineProps({ input: String })
 const root = ref(null)
-const mountedApps = []
+const mountedPlaceholders = []
 const attachedListeners = []
+const staticHoverListeners = []
 
 function decodeBase64(s) {
     try {
@@ -99,17 +99,47 @@ function decodeBase64(s) {
 
 onMounted(() => {
     if (!root.value) return
+    const instance = getCurrentInstance()
+
+    // mount footnote placeholders using parent app context so they resolve plugins
     const placeholders = root.value.querySelectorAll('.footnote-placeholder')
     placeholders.forEach((el) => {
         const num = parseInt(el.getAttribute('data-number') || '0', 10)
         const encoded = el.getAttribute('data-content') || ''
         const content = decodeBase64(encoded)
-        const app = createApp(Footnote, { number: num, content })
-        app.mount(el)
-        mountedApps.push(app)
+        const vnode = createVNode(Footnote, { number: num, content })
+        if (instance && instance.appContext) vnode.appContext = instance.appContext
+        render(vnode, el)
+        mountedPlaceholders.push({ el })
     })
 
-    // Attach SPA click handlers if a router is available (call useRouter() in setup)
+    // mount compiled component placeholders (Highlight, PoolList, etc.) with parent app context
+    const compiledPlaceholders = Array.from(root.value.querySelectorAll('[data-component]'))
+    console.log('[CompiledContent] found placeholders:', compiledPlaceholders.length)
+    compiledPlaceholders.forEach((el, i) => {
+        try {
+            const name = el.getAttribute('data-component')
+            const propsEncoded = el.getAttribute('data-props') || ''
+            const propsStr = decodeBase64(propsEncoded) || '{}'
+            const props = JSON.parse(propsStr)
+            let comp = null
+            if (name === 'Highlight') comp = Highlight
+            else if (name === 'PoolList') comp = PoolList
+            else if (name === 'Footnote') comp = Footnote
+            console.log('[CompiledContent] mounting placeholder', i, name, props)
+            if (comp) {
+                const vnode = createVNode(comp, props)
+                if (instance && instance.appContext) vnode.appContext = instance.appContext
+                render(vnode, el)
+                try { el.setAttribute('data-mounted', '1') } catch (e) { }
+                mountedPlaceholders.push({ el })
+            }
+        } catch (e) {
+            console.warn('[CompiledContent] failed to mount placeholder', i, e && e.message ? e.message : e, el)
+        }
+    })
+
+    // Attach SPA click handlers if a router is available
     try {
         const router = (() => { try { return useRouter() } catch { return null } })()
         if (router) {
@@ -129,16 +159,51 @@ onMounted(() => {
     } catch (e) {
         // router may be unavailable; fall back to normal anchors
     }
+
+    // Progressive enhancement for pre-rendered image grids: attach hover handlers
+    try {
+        const grids = root.value.querySelectorAll('.imagegrid .grid')
+        grids.forEach((el) => {
+            const hover = (e) => {
+                try {
+                    window.clearTimeout(el.timeout)
+                    const cur = document.__db_curHover
+                    if (cur && el.offsetTop !== cur.offsetTop) {
+                        cur.classList.remove('hover')
+                    }
+                    el.classList.add('hover')
+                    document.__db_curHover = el
+                } catch (er) { }
+            }
+            const unhover = (e) => {
+                el.timeout = window.setTimeout(() => {
+                    try { el.classList.remove('hover') } catch (er) { }
+                    delete el.timeout
+                }, 500)
+            }
+            el.addEventListener('mouseenter', hover)
+            el.addEventListener('mouseleave', unhover)
+            staticHoverListeners.push({ el, hover, unhover })
+        })
+    } catch (e) {
+        // ignore
+    }
 })
 
 onBeforeUnmount(() => {
-    mountedApps.forEach(a => a.unmount())
-    mountedApps.length = 0
+    mountedPlaceholders.forEach(({ el }) => { try { render(null, el) } catch (e) { } })
+    mountedPlaceholders.length = 0
     // remove any attached SPA click listeners
     attachedListeners.forEach(({ el, onClick }) => {
         try { el.removeEventListener('click', onClick) } catch (e) { }
     })
     attachedListeners.length = 0
+    // remove hover listeners attached to pre-rendered image grids
+    staticHoverListeners.forEach(({ el, hover, unhover }) => {
+        try { el.removeEventListener('mouseenter', hover) } catch (e) { }
+        try { el.removeEventListener('mouseleave', unhover) } catch (e) { }
+    })
+    staticHoverListeners.length = 0
 })
 
 function encodeBase64(str) {
@@ -171,6 +236,12 @@ function parseParts(input) {
         return `<span class="footnote-placeholder" data-number="${num}" data-content="${encodeBase64(inner)}"></span>`
     })
 
+    // If the processed HTML already contains expanded markup (no <pool-list> or <highlightjs> tags),
+    // return it as a single HTML part so SSR output remains unchanged and hydration matches.
+    if (!/<(?:pool-list|PoolList)\b/i.test(processed) && !/<highlightjs\b/i.test(processed)) {
+        return [{ type: 'html', html: processed }]
+    }
+
     const re = /(<Footnote\b[\s\S]*?<\/Footnote>)|(<highlightjs[\s\S]*?<\/highlightjs>)|(<(?:pool-list|PoolList)\b[\s\S]*?<\/(?:pool-list|PoolList)>|<(?:pool-list|PoolList)\b[^>]*\/>)/gi
     let lastIndex = 0
     let m
@@ -195,7 +266,7 @@ function parseParts(input) {
                 }
             }
             const num = props.number ? Number(props.number) : 0
-            parts.push({ type: 'component', name: 'Footnote', props: { number: num, content: inner } })
+            parts.push({ type: 'html', html: `<span class="footnote-placeholder" data-number="${num}" data-content="${encodeBase64(inner)}"></span>` })
         } else if (/^<(?:pool-list|PoolList)/i.test(match)) {
             const open = match.match(/^<(?:pool-list|PoolList)\b([^>]*)>/i)
             let attrs = open && open[1] ? open[1] : ''
@@ -209,7 +280,7 @@ function parseParts(input) {
                 const cleanName = name.replace(/^[:@]/, '')
                 props[cleanName] = val
             }
-            parts.push({ type: 'component', name: 'PoolList', props })
+            parts.push({ type: 'html', html: `<div class="compiled-placeholder" data-component="PoolList" data-props="${encodeBase64(JSON.stringify(props))}"></div>` })
         } else {
             // highlightjs
             const open = match.match(/^<highlightjs\b([^>]*)>/i)
@@ -226,7 +297,7 @@ function parseParts(input) {
             }
             if (!props.language) props.language = 'javascript'
             if (!props.encoded && inner) props.encoded = encodeBase64(inner)
-            parts.push({ type: 'component', name: 'Highlight', props })
+            parts.push({ type: 'html', html: `<div class="compiled-placeholder" data-component="Highlight" data-props="${encodeBase64(JSON.stringify(props))}"></div>` })
         }
         lastIndex = re.lastIndex
     }
@@ -235,6 +306,4 @@ function parseParts(input) {
 }
 
 const parts = computed(() => parseParts(props.input || ''))
-
-const componentMap = { Footnote, Highlight, PoolList }
 </script>

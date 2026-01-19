@@ -3,6 +3,15 @@ import { ref } from 'vue'
 import { useUserStore } from './user'
 import { API_BASE } from '@/helpers/api'
 import { fromDatetimeLocal } from '@/helpers'
+// Prefer using the static expanded page cache for dev hydration parity
+let pagesCache = []
+try {
+    // relative to /stores
+    // eslint-disable-next-line import/no-unresolved
+    pagesCache = require('../.cache/pages.json')
+} catch (e) {
+    pagesCache = []
+}
 
 export const usePageStore = defineStore('page', () => {
     // State
@@ -123,6 +132,15 @@ export const usePageStore = defineStore('page', () => {
             if (!item || typeof item !== 'object' || !item.id) {
                 console.warn('[page.js] Skipping invalid page item:', item)
                 continue
+            }
+            // If a static expanded page exists in the on-disk cache, prefer its body
+            try {
+                const staticMatch = pagesCache && Array.isArray(pagesCache) && pagesCache.find(p => String(p.id) === String(item.id))
+                if (staticMatch && staticMatch.body) {
+                    item.body = staticMatch.body
+                }
+            } catch (e) {
+                // ignore cache read errors
             }
             if (item._created) item._created = new Date(Number(item._created))
             if (item._edited) item._edited = new Date(Number(item._edited))

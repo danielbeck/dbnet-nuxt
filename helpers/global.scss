@@ -50,3 +50,65 @@ label span {
     min-width: 100px;
     margin: 0.2em;
 }
+
+/* Styles for prerendered pool image grids so static HTML matches component layout */
+.imagegrid {
+    width: calc(100vw - 5em);
+}
+
+.imagegrid .grid {
+    display: inline-block;
+    padding: 0.5em 1em 0.5em 0;
+    transition: all 0.5s;
+    position: relative;
+}
+
+.imagegrid .grid a {
+    border: none;
+}
+
+.imagegrid .grid img {
+    box-shadow: 1px 1px 0.3em rgba(0, 0, 0, 0.3);
+    transition: all 0.3s;
+}
+
+.imagegrid .grid .label {
+    position: absolute;
+    opacity: 0;
+    left: 0;
+    transition: opacity 0.6s;
+}
+
+.imagegrid .grid:hover img {
+    box-shadow: 3px 3px 0.5em rgba(0, 0, 0, 0.6);
+}
+
+.imagegrid .grid:hover .label {
+    opacity: 1;
+}
+
+.imagegrid .hover {
+    margin-bottom: 1em;
+}
+
+@media screen and (max-width: 600px) {
+    .imagegrid {
+        width: calc(100vw - 1em);
+    }
+}
+
+/* Global list layout for prerendered pool lists */
+.flex {
+    display: flex;
+    align-items: flex-start;
+}
+
+.flex .label {
+    min-width: 140px;
+    text-align: right;
+    padding-right: 0.5em;
+}
+
+.flex .content {
+    flex: 1 1 auto;
+}

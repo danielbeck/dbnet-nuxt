@@ -29,6 +29,11 @@ const fmtDate = (ms) => {
     } catch (e) { return '' }
 }
 
+const escapeHtml = (str) => {
+    if (str === undefined || str === null) return ''
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
 const parseLimit = (limit) => {
     if (!limit) return null
     if (limit === '*') return Infinity
@@ -87,10 +92,10 @@ async function main() {
         // render different types
         if (types === 'summary') {
             const nodes = items.map(it => {
-                const title = it.title || ''
+                const title = escapeHtml(it.title || '')
                 const href = pathPrefix ? `${pathPrefix}${it.slug}.html` : `${it.slug}.html`
                 const date = fmtDate(it.date)
-                const excerpt = truncate(stripHtml(it.body || ''), 150)
+                const excerpt = escapeHtml(truncate(stripHtml(it.body || ''), 150))
                 return `<div class="flex"><div class="label">${date}: </div><div class="content"><a href="${href}">${title}</a><div>${excerpt}</div></div></div>`
             })
             if (nodes.length) nodes.push('<hr />')
@@ -101,17 +106,23 @@ async function main() {
             const nodes = items.map(it => {
                 const title = it.title || ''
                 const href = pathPrefix ? `${pathPrefix}${it.slug}.html` : `${it.slug}.html`
+                let imgSrc = ''
                 if (it.img) {
-                    return `<a href="${href}"><img src="${it.img}" alt="${title}"/></a>`
+                    imgSrc = it.img
+                    // ensure absolute pool path like /pool/xxx_image.jpg
+                    if (!imgSrc.startsWith('/') && !/^https?:\/\//i.test(imgSrc)) imgSrc = '/pool/' + imgSrc
+                    // use thumbnail variant when possible
+                    imgSrc = imgSrc.replace(/_image(\.|$)/, '_thumbnail$1')
+                    return `<div class="grid"><a href="${href}"><img src="${imgSrc}" alt="${escapeHtml(title)}" width="124" height="124"/></a><div class="label"><span>${title}</span></div></div>`
                 }
-                return `<div class="image-item"><a href="${href}">${title}</a></div>`
+                return `<div class="grid"><a href="${href}">${escapeHtml(title)}</a></div>`
             })
-            return `<div class="pool-images">${nodes.join('')}</div>`
+            return `<div class="imagegrid">${nodes.join('')}</div>`
         }
 
         // default: list
         return items.map(it => {
-            const title = it.title || ''
+            const title = escapeHtml(it.title || '')
             const href = pathPrefix ? `${pathPrefix}${it.slug}.html` : `${it.slug}.html`
             const date = fmtDate(it.date)
             return `<div class="flex"><div class="label"><span>${date}: </span></div><div class="content"><a href="${href}">${title}</a></div></div>`
