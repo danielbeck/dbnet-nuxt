@@ -37,7 +37,7 @@ function handleClickOutside(event) {
 }
 
 onMounted(() => {
-    document.addEventListener('mousedown', handleClickOutside)
+    if (typeof document !== 'undefined') document.addEventListener('mousedown', handleClickOutside)
 })
 
 watch(show, (val) => {
@@ -73,7 +73,7 @@ watch(show, (val) => {
 })
 
 onBeforeUnmount(() => {
-    document.removeEventListener('mousedown', handleClickOutside)
+    if (typeof document !== 'undefined') document.removeEventListener('mousedown', handleClickOutside)
     if (cleanupFloating.value) cleanupFloating.value()
 })
 </script>

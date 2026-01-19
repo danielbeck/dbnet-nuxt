@@ -38,7 +38,12 @@
             </nav>
 
             <div @touchstart="touchStart" @touchend="touchEnd">
-                <CompiledContent :input="pageOrBlank.body" />
+                <!-- Render full HTML during SSR so static output contains the page text for indexing. -->
+                <div v-if="isSSR" v-html="pageOrBlank.body"></div>
+                <!-- On client, mount interactive components via CompiledContent -->
+                <ClientOnly v-else>
+                    <CompiledContent :input="pageOrBlank.body" />
+                </ClientOnly>
 
                 <div v-if="pageOrBlank.img" class="pageimage">
                     <img :src="pageOrBlank.img" :alt="'Photo of ' + pageOrBlank.title" />
@@ -202,6 +207,7 @@ import { ref } from 'vue'
 
 // Start `loading` as false so SSR and client initial render match
 const loading = ref(false)
+const isSSR = import.meta.env.SSR
 const getPoolItem = (id) => pool.find(p => String(p.id) === String(id)) || null
 const getPageItem = (id) => pagesCache.find(p => String(p.id) === String(id)) || null
 const page = computed(() => {
@@ -387,11 +393,11 @@ function keyEventWatcher(e) {
 }
 
 onMounted(() => {
-    document.addEventListener('keydown', keyEventWatcher)
+    if (typeof document !== 'undefined') document.addEventListener('keydown', keyEventWatcher)
 })
 
 onBeforeUnmount(() => {
-    document.removeEventListener('keydown', keyEventWatcher)
+    if (typeof document !== 'undefined') document.removeEventListener('keydown', keyEventWatcher)
 })
 </script>
 

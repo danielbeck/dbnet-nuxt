@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "build": "nuxt build",
-    "clean": "rimraf .output .nuxt .vite dist",
-    "dev": "node scripts/generate-pool-cache.js && node scripts/generate-page-cache.js && nuxt dev",
-    "generate": "nuxt generate",
+    "clean": "rimraf .output .nuxt .vite dist/*",
+    "dev": "npm run clean && node scripts/generate-pool-cache.js && node scripts/generate-page-cache.js && nuxt dev",
+    "generate": "node scripts/generate-pool-cache.js && node scripts/generate-page-cache.js && nuxt generate",
+    "postgenerate": "node scripts/generate-rss.js && node scripts/generate-sitemap.js",
     "preview": "nuxt preview",
     "deploy": "npm run generate && ./scripts/deploy.sh",
     "postinstall": "nuxt prepare"

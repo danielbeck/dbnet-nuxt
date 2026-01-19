@@ -36,7 +36,7 @@ export const usePoolStore = defineStore('pool', () => {
         const response = await fetch(`${API_BASE}/pool.php`)
         const data = await response.json()
         processPool(data)
-        document.dispatchEvent(new Event('pool-getAll'))
+        if (typeof document !== 'undefined') document.dispatchEvent(new Event('pool-getAll'))
     }
 
     async function getHomepage() {
@@ -55,7 +55,7 @@ export const usePoolStore = defineStore('pool', () => {
         const data = await response.json()
         tagLoaded.value[tag] = true
         processPool(data)
-        document.dispatchEvent(new Event('pool-getByTag-' + tag))
+        if (typeof document !== 'undefined') document.dispatchEvent(new Event('pool-getByTag-' + tag))
     }
 
     async function get(id) {

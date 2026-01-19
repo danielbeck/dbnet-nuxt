@@ -45,9 +45,13 @@ const truncate = function (text, length, clamp) {
     if (text === undefined || text === '' || text === null) return '';
     clamp = clamp || '...';
     length = length || 30;
-    const tmpNode = document.createElement("DIV");
-    tmpNode.innerHTML = text;
-    text = tmpNode.textContent || tmpNode.innerText || "";
+    // Avoid using `document` so this works during SSR
+    // Strip HTML tags safely and fall back to the original string if needed
+    try {
+        text = String(text).replace(/<[^>]*>/g, '');
+    } catch (e) {
+        text = String(text);
+    }
     if (text.length <= length) return text;
     let tcText = text.slice(0, length - clamp.length);
     let last = tcText.length - 1;
