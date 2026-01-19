@@ -11,12 +11,12 @@
                 <NuxtLink :to="item.path">{{ item.name }}</NuxtLink>
             </li>
         </ul>
-        <ul v-if="nav[2]">
+        <ul v-if="nav[2] && nav[1] && nav[1].some(i => i.classes.active)">
             <li v-for="item in nav[2]" :key="item.path" :class="item.classes">
                 <NuxtLink :to="item.path">{{ item.name }}</NuxtLink>
             </li>
         </ul>
-        <ul v-if="nav[3]">
+        <ul v-if="nav[3] && nav[2] && nav[2].some(i => i.classes.active)">
             <li v-for="item in nav[3]" :key="item.path" :class="item.classes">
                 <NuxtLink :to="item.path">{{ item.name }}</NuxtLink>
             </li>
@@ -33,6 +33,7 @@ const route = useRoute()
 const nav = computed(() => {
     let navArr = [[], [], []];
     let currentPath = route.path;
+    let activePaths = [null, null, null];
 
     for (let r of siteRoutes) {
         if (r.meta && r.meta.noNav) continue;
@@ -43,17 +44,29 @@ const nav = computed(() => {
             classes: {}
         };
         let depth = parts.length;
-        // Highlight if current path starts with this route's path (excluding trailing slash for robustness)
         let normalizedRoutePath = r.path.replace(/\/$/, '');
         let normalizedCurrentPath = currentPath.replace(/\/$/, '');
         if (
             normalizedRoutePath === '' ? normalizedCurrentPath === '' :
-            normalizedCurrentPath === normalizedRoutePath || normalizedCurrentPath.startsWith(normalizedRoutePath + '/')
+                normalizedCurrentPath === normalizedRoutePath || normalizedCurrentPath.startsWith(normalizedRoutePath + '/')
         ) {
             link.classes = { active: true };
+            activePaths[depth] = normalizedRoutePath;
         }
         navArr[depth] = navArr[depth] || [];
         navArr[depth].push(link);
+    }
+    // Filter nav[2] to only show if its parent (nav[1]) is active and is a prefix of the nav[2] path
+    if (navArr[2] && activePaths[1]) {
+        navArr[2] = navArr[2].filter(item => item.path.startsWith(activePaths[1] + '/'));
+    } else if (navArr[2]) {
+        navArr[2] = [];
+    }
+    // Filter nav[3] to only show if its parent (nav[2]) is active and is a prefix of the nav[3] path
+    if (navArr[3] && activePaths[2]) {
+        navArr[3] = navArr[3].filter(item => item.path.startsWith(activePaths[2] + '/'));
+    } else if (navArr[3]) {
+        navArr[3] = [];
     }
     return navArr;
 });
