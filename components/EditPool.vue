@@ -27,8 +27,18 @@
                 <textarea v-model="editable.body"></textarea>
             </label>
 
-            <label v-for="(tag, i) in editable.tags" :key="i" style="display: flex; align-items: center; gap: 0.5em;">
-                <span>{{ i === 0 ? 'Tags:' : '' }}</span>
+            <label v-for="(tag, i) in editable.tags" :key="i"
+                style="display: flex; align-items: center; gap: 0.5em; position: relative;">
+                <span @mouseenter="showTagsPopup = true" @mouseleave="showTagsPopup = false"
+                    style="position: relative;">
+                    {{ i === 0 ? 'Tags:' : '' }}
+                    <div v-if="i === 0 && showTagsPopup" class="tags-popup">
+                        <div v-if="allTags.length === 0" style="padding: 0.5em;">No tags in use</div>
+                        <div v-else style="max-height: 200px; overflow-y: auto; padding: 0.5em;">
+                            <span v-for="tag in allTags" :key="tag" class="tag-item">{{ tag }}</span>
+                        </div>
+                    </div>
+                </span>
                 <input v-model="editable.tags[i]">
                 <button type="button" @click="removeTag(i)" v-if="editable.tags.length > 1"
                     style="margin-left: 0.5em;">&times;</button>
@@ -64,6 +74,15 @@
 </template>
 
 <script setup>
+const showTagsPopup = ref(false)
+const allTags = computed(() => {
+    // Get all tags from all pool items, flatten, dedupe, and sort
+    const tags = Object.values(pool.value)
+        .flatMap(item => Array.isArray(item.tags) ? item.tags : [])
+        .map(t => t.trim())
+        .filter(t => t);
+    return Array.from(new Set(tags)).sort((a, b) => a.localeCompare(b));
+})
 function removeTag(idx) {
     if (Array.isArray(editable.value.tags) && editable.value.tags.length > 1) {
         editable.value.tags.splice(idx, 1);
@@ -358,4 +377,28 @@ onBeforeMount(() => {
 })
 </script>
 
-<style></style>
+<style>
+.tags-popup {
+    position: absolute;
+    left: 0;
+    top: 1.8em;
+    z-index: 10;
+    background: #fff;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-radius: 0.3em;
+    min-width: 160px;
+    max-width: 260px;
+    font-size: 0.95em;
+    color: #222;
+}
+
+.tag-item {
+    display: inline-block;
+    background: #f2f2f2;
+    border-radius: 0.2em;
+    padding: 0.15em 0.5em;
+    margin: 0.1em 0.2em;
+    font-size: 0.95em;
+}
+</style>
