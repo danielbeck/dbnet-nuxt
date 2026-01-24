@@ -24,7 +24,8 @@
 </template>
 
 <script setup>
-import { useHead } from '#imports'
+
+// import { useHead } from '#imports' // No longer needed
 import { onMounted, watch as vueWatch } from 'vue'
 import { ref, computed, watch, onBeforeMount, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -56,29 +57,11 @@ const item = computed(() => {
     return pool.value[itemId] || { title: '' }
 })
 
-useHead(() => {
-    const slug = item.value && item.value.slug
-    return {
-        link: [
-            {
-                rel: 'canonical',
-                href: slug
-                    ? 'https://danielbeck.net/archive/' + slug + '.html'
-                    : 'https://danielbeck.net/archive/'
-            }
-        ]
-    }
-})
 
 
-watch(item, (p) => {
-    if (p.title) {
-        document.title = p.title
-    }
-    nextTick(() => {
-        document.dispatchEvent(new Event('prerender-trigger'))
-    })
-}, { immediate: true })
+
+
+// No need to set document.title or canonical link here; handled in [...slug].vue
 
 const setNextPrev = () => {
     let sorted = Object.keys(pool.value)
