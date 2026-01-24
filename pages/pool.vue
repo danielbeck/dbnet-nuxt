@@ -24,6 +24,7 @@
 </template>
 
 <script setup>
+import { useHead } from '#imports'
 import { onMounted, watch as vueWatch } from 'vue'
 import { ref, computed, watch, onBeforeMount, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -55,30 +56,20 @@ const item = computed(() => {
     return pool.value[itemId] || { title: '' }
 })
 
-function setCanonicalLink(href) {
-    let link = document.querySelector('link[rel="canonical"]')
-    if (!link) {
-        link = document.createElement('link')
-        link.setAttribute('rel', 'canonical')
-        document.head.appendChild(link)
+useHead(() => {
+    const slug = item.value && item.value.slug
+    return {
+        link: [
+            {
+                rel: 'canonical',
+                href: slug
+                    ? 'https://danielbeck.net/archive/' + slug + '.html'
+                    : 'https://danielbeck.net/archive/'
+            }
+        ]
     }
-    link.setAttribute('href', href)
-}
+})
 
-function getArchiveUrl(item) {
-    if (!item || !item.slug) return window.location.origin + '/archive/'
-    return window.location.origin + '/archive/' + item.slug + '.html'
-}
-
-function updateCanonical() {
-    if (!item.value || !item.value.slug) return
-    const archivePath = '/archive/' + item.value.slug + '.html'
-    setCanonicalLink(window.location.origin + archivePath)
-}
-
-onMounted(updateCanonical)
-vueWatch(item, updateCanonical)
-vueWatch(route, updateCanonical)
 
 watch(item, (p) => {
     if (p.title) {
