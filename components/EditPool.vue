@@ -34,7 +34,19 @@
                     style="margin-left: 0.5em;">&times;</button>
             </label>
             <label><span></span><button @click="addTag">Add tag</button></label>
-            <label><span>img:</span> <input type="text" v-model="editable.img"></label>
+            <label>
+                <span>Image:</span>
+                <input type="file" accept="image/*" @change="onImageSelected">
+            </label>
+            <label><span>Image previews:</span>
+                <div v-if="imagePreview" style="margin-top:0.5em;">
+                    <img :src="imagePreview" alt="Preview" style="max-width:200px;max-height:200px;display:block;">
+                </div>
+                <div v-if="thumbnailPreview" style="margin-top:0.5em;">
+                    <img :src="thumbnailPreview" alt="Thumbnail" style="width:150px;height:150px;object-fit:cover;">
+                </div>
+
+            </label>
             <!--
             <label><span>f:</span> <input type="text" v-model="editable.f"></label>
             <label><span>mm:</span> <input type="text" v-model="editable.mm"></label>
@@ -172,6 +184,15 @@ async function toggleEdit() {
             shutter: item.value && item.value.shutter,
             format: detectedFormat
         }
+        // Show existing image in preview if present
+        if (editable.value.img) {
+            imagePreview.value = editable.value.img;
+            // Optionally set thumbnailPreview too
+            thumbnailPreview.value = editable.value.img.replace('_image', '_thumbnail');
+        } else {
+            imagePreview.value = '';
+            thumbnailPreview.value = '';
+        }
         // Track whether slug was already set (existing item) or should auto-generate (new item)
         slugManuallyEdited.value = !!existingSlug;
         lastAutoSlug.value = existingSlug;
@@ -233,6 +254,44 @@ function fixHtml() {
     }
 }
 
+const imagePreview = ref('');
+const thumbnailPreview = ref('');
+let selectedImageFile = null;
+
+function onImageSelected(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    selectedImageFile = file;
+    const reader = new FileReader();
+    reader.onload = function (ev) {
+        imagePreview.value = ev.target.result;
+        // Optionally, trigger cropping UI here
+        // For now, just set thumbnail to same image
+        thumbnailPreview.value = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+async function uploadImage(poolId) {
+    if (!selectedImageFile) return null;
+    const formData = new FormData();
+    formData.append('image', selectedImageFile);
+    formData.append('pool_id', poolId);
+    // Optionally add crop data here
+    const response = await fetch('/api/pool-upload', {
+        method: 'POST',
+        body: formData
+    });
+    const result = await response.json();
+    if (result.success && result.imgUrl) {
+        editable.value.img = result.imgUrl;
+        if (result.thumbnailUrl) {
+            thumbnailPreview.value = result.thumbnailUrl;
+        }
+    }
+    return result;
+}
+
 async function save() {
     errorMessage.value = '';
     // Validation: slug and all tags must be non-empty
@@ -244,7 +303,7 @@ async function save() {
         errorMessage.value = 'All tag fields must be filled.';
         return;
     }
-    // Prepare data for saving
+    // Step 1: Save pool item first to get its ID
     const dataToSave = { ...editable.value };
     // Apply smartquotes to title and body
     dataToSave.title = smartquotes(dataToSave.title);
@@ -253,11 +312,28 @@ async function save() {
         // Convert markdown to HTML before saving
         dataToSave.body = marked.parse(dataToSave.body || '');
     }
-    // Save format field as well
     const result = await poolStore.edit(dataToSave);
     if (result && !result.success && result.error === 'duplicate-slug') {
         errorMessage.value = 'A pool item with this slug already exists.';
         return;
+    }
+    // Step 2: Upload image if selected, using the new ID
+    let poolId = dataToSave.id;
+    // Try to get the new ID from the pool store if not present
+    if (!poolId && result && result.success) {
+        // Find the item by slug in the pool store
+        const savedItem = Object.values(poolStore.pool).find(p => p.slug === dataToSave.slug);
+        if (savedItem) poolId = savedItem.id;
+    }
+    if (selectedImageFile && poolId) {
+        const uploadResult = await uploadImage(poolId);
+        if (uploadResult && uploadResult.success && uploadResult.imgUrl) {
+            // Step 3: Update pool item with image URL
+            const updateData = { ...dataToSave, id: poolId, img: uploadResult.imgUrl };
+            // Ensure date is a string from the form, not a JS Date object
+            updateData.date = editable.value.date;
+            await poolStore.edit(updateData);
+        }
     }
     edit.value = false;
 }

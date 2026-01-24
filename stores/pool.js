@@ -130,6 +130,7 @@ export const usePoolStore = defineStore('pool', () => {
         const user = userStore.currentUser.user
         const nonce = userStore.currentUser.nonce
 
+        // Delete pool item from backend
         const response = await fetch(`${API_BASE}/pool-delete.php?id=${id}&_user=${user}&_nonce=${nonce}`)
 
         const newNonce = response.headers.get('X-New-Nonce')
@@ -138,6 +139,17 @@ export const usePoolStore = defineStore('pool', () => {
                 user: user,
                 nonce: newNonce
             })
+        }
+
+        // Delete associated image files via Nitro API
+        try {
+            await fetch('/api/pool-delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            })
+        } catch (e) {
+            // ...existing code...
         }
 
         // Update on-disk cache so deleted item is removed from .cache/pool.json
