@@ -16,7 +16,6 @@ export default [
     { name: "Berkshires", id: "berkshire", path: "/photos/travel/berkshire/", tag: "berkshire" },
     { name: "Big Things", id: "big", path: "/photos/travel/big/", tag: "big" },
     { name: "Cruise", id: "cruise", path: "/photos/travel/cruise/", tag: "cruise" },
-    { name: "Album", id: "album", path: "/photos/archive/", tag: "photos" },
     { name: "Portfolio", id: "portfolio", path: "/portfolio/" },
     { name: "Archive", id: "archive", path: "/archive/" }
 ];
