@@ -15,7 +15,7 @@
             <nav class="npnav" v-if="isPoolItem">
                 <div class="nav">
                     <template v-if="prevItem">
-                        <router-link class="npbtn" :to="buildPoolItemUrl(prevItem, currentTag)"
+                        <router-link class="npbtn" :to="buildPoolItemUrl(prevItem)"
                             :aria-label="currentTag ? 'Previous page in ' + currentTag : 'Previous page'">‹</router-link>
                     </template>
                     <template v-else>
@@ -24,7 +24,7 @@
                 </div>
                 <div class="nav">
                     <template v-if="nextItem">
-                        <router-link class="npbtn" :to="buildPoolItemUrl(nextItem, currentTag)"
+                        <router-link class="npbtn" :to="buildPoolItemUrl(nextItem)"
                             :aria-label="currentTag ? 'Next page in ' + currentTag : 'Next page'">›</router-link>
                     </template>
                     <template v-else>
@@ -295,6 +295,32 @@ const currentTag = computed(() => {
     return null
 })
 
+// Navigation context: derive section/tag from the current route path
+const navContext = computed(() => {
+    let slugArr
+    if (route.params && route.params.slug !== undefined) {
+        if (Array.isArray(route.params.slug)) {
+            slugArr = route.params.slug
+        } else if (typeof route.params.slug === 'string') {
+            slugArr = route.params.slug.split('/').filter(Boolean)
+        } else {
+            slugArr = []
+        }
+    } else if (route.path) {
+        slugArr = route.path.replace(/^\//, '').replace(/\/$/, '').split('/')
+    } else {
+        slugArr = []
+    }
+    const resolvedNav = sharedResolveIdTag(
+        slugArr,
+        routes,
+        pool,
+        findPoolItemBySlugAndTag,
+        findPoolItemBySlug
+    )
+    return resolvedNav.tag || null
+})
+
 function getPoolListForTag(t) {
     const storePool = poolStore && poolStore.pool ? poolStore.pool : {}
     const runtimeMap = {}
@@ -321,21 +347,24 @@ function getPoolListForTag(t) {
     return sortByDateAsc(runtimeOnly.concat(merged))
 }
 
-function buildPoolItemUrl(item, tagParam) {
+function buildPoolItemUrl(item) {
     if (!item) return '#'
-    if (!tagParam) {
-        return `/archive/${item.slug}.html`
+    // Use the current path as prefix, only change the slug.
+    // Always keep the existing path (everything except the last segment)
+    const currentPath = String(route.path || '')
+    const isHtml = currentPath.endsWith('.html')
+    const segments = currentPath.replace(/\/$/, '').split('/').filter(Boolean)
+    // Remove the last segment (the current slug)
+    segments.pop()
+    const prefix = segments.length ? '/' + segments.join('/') : ''
+    if (isHtml) {
+        return `${prefix}/${item.slug}.html`.replace(/\/\//g, '/')
     }
-    const routeForTag = routes.find(r => r.tag === tagParam)
-    if (routeForTag && routeForTag.path) {
-        const p = String(routeForTag.path).replace(/^\//, '').replace(/\/$/, '')
-        return `/${p}/${item.slug}/`
-    }
-    // fallback
-    return `/${tagParam}/${item.slug}/`
+    return `${prefix}/${item.slug}/`.replace(/\/\//g, '/')
 }
 
-const poolListForCurrent = computed(() => getPoolListForTag(currentTag.value))
+const poolListForCurrent = computed(() => getPoolListForTag(navContext.value))
+
 const currentIndex = computed(() => {
     if (!currentPoolItem.value) return -1
     return poolListForCurrent.value.findIndex(i => String(i.id) === String(currentPoolItem.value.id))
@@ -353,9 +382,9 @@ function touchEnd(e) {
     const diff = t - touchStartX.value
     const threshold = 50
     if (diff > threshold && prevItem.value) {
-        router.push(buildPoolItemUrl(prevItem.value, currentTag.value))
+        router.push(buildPoolItemUrl(prevItem.value))
     } else if (diff < -threshold && nextItem.value) {
-        router.push(buildPoolItemUrl(nextItem.value, currentTag.value))
+        router.push(buildPoolItemUrl(nextItem.value))
     }
 }
 
