@@ -47,6 +47,13 @@ export function resolveIdTag(slugArr, routes, pool, findPoolItemBySlugAndTag, fi
             if (best) {
                 const tag = best.r.tag
                 const consumed = best.segs.length
+                // If the best matching route consumes the entire path, treat it
+                // as an exact route match and return the route id/tag directly.
+                // This avoids incorrectly falling back to a pool-item lookup
+                // when a pool item happens to share the same slug.
+                if (consumed === pathSegments.length) {
+                    return { id: best.r.id, tag: best.r.tag || null }
+                }
                 let relativeSlug = pathSegments.slice(consumed).join('/')
                 if (!relativeSlug) relativeSlug = pathSegments.slice(1).join('/')
                 if (relativeSlug.endsWith('.html')) relativeSlug = relativeSlug.slice(0, -5)

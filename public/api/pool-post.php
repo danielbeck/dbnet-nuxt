@@ -80,6 +80,21 @@ if (empty($data['id'])) {
 	$stmt->close();
 }
 
+// If updating, ensure slug (if provided) doesn't collide with another record
+if ($action === 'update' && !empty($data['slug'])) {
+	$check = $conn->prepare("SELECT id FROM `pool` WHERE slug=? AND id<>?");
+	$check->bind_param('ss', $data['slug'], $data['id']);
+	$check->execute();
+	$res = $check->get_result();
+	if ($res && $res->num_rows > 0) {
+		$check->close();
+		http_response_code(409); // Conflict
+		echo json_encode(['error' => 'Duplicate slug']);
+		exit();
+	}
+	$check->close();
+}
+
 if ($action == "insert") {
 	// Build parameterized insert
 	$fields = ['id', 'slug', 'title', 'body', '_created', '_edited', 'date', 'img', 'f', 'mm', 'iso', 'shutter', 'tags'];
@@ -115,7 +130,7 @@ if ($action == "insert") {
 	$stmt->close();
 } else {
 	// Build parameterized update
-	$always_update = ['title', 'body', 'date', 'img', 'f', 'mm', 'iso', 'shutter', 'tags'];
+	$always_update = ['slug', 'title', 'body', 'date', 'img', 'f', 'mm', 'iso', 'shutter', 'tags'];
 	$conditional_update = ['_created', '_edited'];
 	
 	$sets = [];
