@@ -11,25 +11,22 @@ const formatDate = (d, fmt) => {
     fmt = fmt || "dddd, mmmm dS, yyyy, h:MM:ss TT";
     fmt = (fmt === 'day') ? "mmmm d" : fmt;
     fmt = (fmt === 'date') ? "m/d/yy" : fmt;
-    if (isFinite(d)) {
-        if (!(d instanceof Date)) {
-            d = new Date(d);
-        }
-        return dateFormat(d, fmt);
-    } else {
-        return undefined
+    fmt = (fmt === 'human') ? "mmmm dS, yyyy" : fmt;
+    if (d === undefined || d === null) return undefined;
+    if (!(d instanceof Date)) {
+        d = new Date(d);
     }
+    if (isNaN(d.getTime())) return undefined;
+    return dateFormat(d, fmt);
 }
 
 const datetimeLocal = function (d) {
-    if (isFinite(d)) {
-        if (!(d instanceof Date)) {
-            d = new Date(d);
-        }
-        return dateFormat(d, "yyyy-mm-dd'T'HH:MM:ss");
-    } else {
-        return undefined
+    if (d === undefined || d === null) return undefined;
+    if (!(d instanceof Date)) {
+        d = new Date(d);
     }
+    if (isNaN(d.getTime())) return undefined;
+    return dateFormat(d, "yyyy-mm-dd'T'HH:MM:ss");
 }
 
 const fromDatetimeLocal = function (input) {

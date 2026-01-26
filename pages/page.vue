@@ -11,6 +11,7 @@
                 </template>
             </template>
             <h1 v-html="pageOrBlank.title"></h1>
+            <div v-if="isPoolItem" class="label">{{ formatDate(currentPoolItem.date, 'human') }}</div>
 
             <nav class="npnav" v-if="isPoolItem">
                 <div class="nav">
@@ -58,6 +59,7 @@ import { usePageStore } from '@/stores/page'
 import { usePoolStore } from '@/stores/pool'
 import { useUserStore } from '@/stores/user'
 import CompiledContent from '@/components/CompiledContent.vue'
+import { formatDate } from '@/helpers'
 import EditPage from '@/components/EditPage.vue'
 import EditPool from '@/components/EditPool.vue'
 
