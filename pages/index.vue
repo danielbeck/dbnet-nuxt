@@ -6,13 +6,14 @@
             </ClientOnly>
         </template>
         <div v-else>
-            <EditPage v-if="currentUser" :id="pageOrBlank.id" />
-            <EditPool v-if="currentUser" />
-            <h1 v-html="pageOrBlank.title"></h1>
-            <!-- Render page body via CompiledContent on both server and client.
-                 CompiledContent renders raw HTML during SSR and mounts interactive
-                 fragments on the client, keeping DOM structure consistent. -->
-            <CompiledContent :input="pageOrBlank.body" />
+            <PageShell :title="pageOrBlank.title" :image="pageOrBlank.img" :imageAlt="'Photo of ' + pageOrBlank.title">
+                <template #admin>
+                    <AdminControls :currentUser="currentUser" :isPoolItem="false" :pageId="pageOrBlank.id" />
+                </template>
+                <template #content>
+                    <CompiledContent :input="pageOrBlank.body" />
+                </template>
+            </PageShell>
         </div>
     </div>
 </template>
@@ -37,9 +38,10 @@ if (import.meta.env.SSR) {
     pagesCache = []
 }
 import CompiledContent from '@/components/CompiledContent.vue'
-import EditPage from '@/components/EditPage.vue'
-import EditPool from '@/components/EditPool.vue'
+// EditPage/EditPool are provided via AdminControls
 import Loading from '@/components/Loading.vue'
+import PageShell from '@/components/PageShell.vue'
+import AdminControls from '@/components/AdminControls.vue'
 
 const pageStore = usePageStore()
 const poolStore = usePoolStore()

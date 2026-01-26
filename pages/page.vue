@@ -2,48 +2,22 @@
     <div>
         <Loading v-if="loading && !currentUser" />
         <div v-else-if="pageOrBlank && pageOrBlank.title">
-            <!-- Admin controls: for pool items show EditPool; for non-pool pages show both EditPage and (if tag) Add Pool -->
-            <template v-if="currentUser">
-                <EditPool v-if="isPoolItem" :id="pageOrBlank.id" />
-                <template v-else>
-                    <EditPage :id="pageOrBlank.id" />
-                    <EditPool v-if="tag" :tag="tag" />
+            <PageShell :title="pageOrBlank.title" :image="pageOrBlank.img" :imageAlt="'Photo of ' + pageOrBlank.title"
+                @touchstart="touchStart" @touchend="touchEnd">
+                <template #admin>
+                    <AdminControls :currentUser="currentUser" :isPoolItem="isPoolItem" :pageId="pageOrBlank.id"
+                        :tag="tag" />
                 </template>
-            </template>
-            <h1 v-html="pageOrBlank.title"></h1>
-            <div v-if="isPoolItem" class="label">{{ formatDate(currentPoolItem.date, 'human') }}</div>
-
-            <nav class="npnav" v-if="isPoolItem">
-                <div class="nav">
-                    <template v-if="prevItem">
-                        <router-link class="npbtn" :to="buildPoolItemUrl(prevItem)"
-                            :aria-label="currentTag ? 'Previous page in ' + currentTag : 'Previous page'">‹</router-link>
-                    </template>
-                    <template v-else>
-                        <a class="npbtn disabled" aria-hidden="true">‹</a>
-                    </template>
-                </div>
-                <div class="nav">
-                    <template v-if="nextItem">
-                        <router-link class="npbtn" :to="buildPoolItemUrl(nextItem)"
-                            :aria-label="currentTag ? 'Next page in ' + currentTag : 'Next page'">›</router-link>
-                    </template>
-                    <template v-else>
-                        <a class="npbtn disabled" aria-hidden="true">›</a>
-                    </template>
-                </div>
-            </nav>
-
-            <div @touchstart="touchStart" @touchend="touchEnd">
-                <!-- Render page body via CompiledContent on both server and client.
-                     CompiledContent renders raw HTML during SSR and mounts interactive
-                     fragments on the client, keeping DOM structure consistent. -->
-                <CompiledContent :input="pageOrBlank.body" />
-
-                <div v-if="pageOrBlank.img" class="pageimage">
-                    <img :src="pageOrBlank.img" :alt="'Photo of ' + pageOrBlank.title" />
-                </div>
-            </div>
+                <template #date>
+                    <DateLabel v-if="isPoolItem" :date="currentPoolItem.date" fmt="human" />
+                </template>
+                <template #nav>
+                    <PoolNav v-if="isPoolItem" :prevLink="prevLink" :nextLink="nextLink" :currentTag="currentTag" />
+                </template>
+                <template #content>
+                    <CompiledContent :input="pageOrBlank.body" />
+                </template>
+            </PageShell>
         </div>
         <div v-else>
             <Loading v-if="loading" />
@@ -59,9 +33,10 @@ import { usePageStore } from '@/stores/page'
 import { usePoolStore } from '@/stores/pool'
 import { useUserStore } from '@/stores/user'
 import CompiledContent from '@/components/CompiledContent.vue'
-import { formatDate } from '@/helpers'
-import EditPage from '@/components/EditPage.vue'
-import EditPool from '@/components/EditPool.vue'
+import PageShell from '@/components/PageShell.vue'
+import AdminControls from '@/components/AdminControls.vue'
+import DateLabel from '@/components/DateLabel.vue'
+import PoolNav from '@/components/PoolNav.vue'
 
 import Loading from '@/components/Loading.vue'
 let pool = []
@@ -373,6 +348,8 @@ const currentIndex = computed(() => {
 })
 const prevItem = computed(() => (currentIndex.value > 0 ? poolListForCurrent.value[currentIndex.value - 1] : null))
 const nextItem = computed(() => ((currentIndex.value >= 0 && currentIndex.value < poolListForCurrent.value.length - 1) ? poolListForCurrent.value[currentIndex.value + 1] : null))
+const prevLink = computed(() => prevItem.value ? buildPoolItemUrl(prevItem.value) : false)
+const nextLink = computed(() => nextItem.value ? buildPoolItemUrl(nextItem.value) : false)
 
 // Touch / keyboard navigation
 const touchStartX = ref(0)
@@ -382,7 +359,7 @@ function touchStart(e) {
 function touchEnd(e) {
     const t = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : 0
     const diff = t - touchStartX.value
-    const threshold = 50
+    const threshold = 100
     if (diff > threshold && prevItem.value) {
         router.push(buildPoolItemUrl(prevItem.value))
     } else if (diff < -threshold && nextItem.value) {
