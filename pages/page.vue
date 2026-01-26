@@ -1,7 +1,7 @@
 <template>
     <div>
-        <Loading v-if="loading && !currentUser" />
-        <div v-else-if="pageOrBlank && pageOrBlank.title">
+        <Loading v-if="loading" />
+        <div v-else>
             <PageShell :title="pageOrBlank.title" :image="pageOrBlank.img" :imageAlt="'Photo of ' + pageOrBlank.title"
                 @touchstart="touchStart" @touchend="touchEnd">
                 <template #admin>
@@ -19,10 +19,7 @@
                 </template>
             </PageShell>
         </div>
-        <div v-else>
-            <Loading v-if="loading" />
-            <div v-else style="padding:2em;text-align:center;font-size:1.5em;">Not Found</div>
-        </div>
+
     </div>
 </template>
 
