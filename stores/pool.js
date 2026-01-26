@@ -33,6 +33,8 @@ export const usePoolStore = defineStore('pool', () => {
     }
 
     // Actions
+    const pendingGets = {}
+
     async function getAll() {
         const response = await fetch(`${API_BASE}/pool.php`)
         const data = await response.json()
@@ -48,30 +50,37 @@ export const usePoolStore = defineStore('pool', () => {
 
     async function getByTag(tag) {
         if (tagLoaded.value[tag]) {
-            // already loaded, don't go to the server again
             return Promise.resolve()
         }
-
-        const response = await fetch(`${API_BASE}/pool.php?tag=${tag}`)
-        const data = await response.json()
-        tagLoaded.value[tag] = true
-        processPool(data)
-        if (typeof document !== 'undefined') document.dispatchEvent(new Event('pool-getByTag-' + tag))
+        if (pendingGets[`tag:${tag}`]) return pendingGets[`tag:${tag}`]
+        const p = (async () => {
+            const response = await fetch(`${API_BASE}/pool.php?tag=${tag}`)
+            const data = await response.json()
+            tagLoaded.value[tag] = true
+            processPool(data)
+            if (typeof document !== 'undefined') document.dispatchEvent(new Event('pool-getByTag-' + tag))
+        })()
+        pendingGets[`tag:${tag}`] = p
+        try { await p } finally { delete pendingGets[`tag:${tag}`] }
     }
 
     async function get(id) {
-        if (id === undefined || id === null || id === '') {
-            // Do not make a request if id is not provided
-            return;
-        }
-        // Determine if id is numeric (fetch by id) or a slug (fetch by slug)
-        const isNumeric = /^\d+$/.test(id)
-        const param = isNumeric ? 'id' : 'slug'
-        const response = await fetch(`${API_BASE}/pool.php?${param}=${id}`)
-        const data = await response.json()
-        if (data.length) {
-            processPool(data)
-        }
+        if (id === undefined || id === null || id === '') return;
+        // Avoid duplicate concurrent requests
+        if (pendingGets[`get:${id}`]) return pendingGets[`get:${id}`]
+
+        const p = (async () => {
+            const isNumeric = /^\d+$/.test(id)
+            const param = isNumeric ? 'id' : 'slug'
+            const response = await fetch(`${API_BASE}/pool.php?${param}=${id}`)
+            const data = await response.json()
+            if (data && data.length) {
+                processPool(data)
+            }
+        })()
+
+        pendingGets[`get:${id}`] = p
+        try { await p } finally { delete pendingGets[`get:${id}`] }
     }
 
     async function edit(data) {

@@ -41,6 +41,8 @@ export const usePageStore = defineStore('page', () => {
     }
 
     // Actions
+    const pendingGets = {}
+
     async function getAll() {
         const response = await fetch(`${API_BASE}/page.php`)
         const data = await response.json()
@@ -49,10 +51,16 @@ export const usePageStore = defineStore('page', () => {
     }
 
     async function get(id) {
-        const response = await fetch(`${API_BASE}/page.php?id=${id}`)
-        const data = await response.json()
-        processPages(data)
-        document.dispatchEvent(new Event('page-get-' + id))
+        if (!id) return;
+        if (pendingGets[`get:${id}`]) return pendingGets[`get:${id}`]
+        const p = (async () => {
+            const response = await fetch(`${API_BASE}/page.php?id=${id}`)
+            const data = await response.json()
+            processPages(data)
+            document.dispatchEvent(new Event('page-get-' + id))
+        })()
+        pendingGets[`get:${id}`] = p
+        try { await p } finally { delete pendingGets[`get:${id}`] }
     }
 
     async function edit(data) {
