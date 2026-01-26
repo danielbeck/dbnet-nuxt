@@ -189,7 +189,10 @@ export const usePoolStore = defineStore('pool', () => {
                 }
                 item.thumbnail = item.img.replace(/_image/, '_thumbnail')
             }
-            newItems[item.id] = item
+            // Normalize id to string for consistent keys and comparisons
+            const idStr = String(item.id)
+            item.id = idStr
+            newItems[idStr] = item
         }
         // merge the new items in:
         pool.value = {

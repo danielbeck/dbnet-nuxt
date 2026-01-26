@@ -158,7 +158,10 @@ export const usePageStore = defineStore('page', () => {
             }
             if (item._created) item._created = new Date(Number(item._created))
             if (item._edited) item._edited = new Date(Number(item._edited))
-            page.value[item.id] = item
+            // Normalize id to string for consistent keys and comparisons
+            const idStr = String(item.id)
+            item.id = idStr
+            page.value[idStr] = item
         }
     }
 
