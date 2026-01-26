@@ -21,7 +21,6 @@
                         <div>{{ truncate(stripFootnotes(p.body), 150) }}</div>
                     </div>
                 </div>
-                <hr />
             </div>
         </div>
     </div>
