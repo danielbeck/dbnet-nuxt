@@ -13,5 +13,10 @@
 <script setup>
 import EditPage from '@/components/EditPage.vue'
 import EditPool from '@/components/EditPool.vue'
-const props = defineProps({ isPoolItem: { type: Boolean, default: false }, pageId: { type: [String, Number], default: '' }, tag: { type: String, default: '' }, currentUser: { type: Boolean, default: false } })
+const props = defineProps({
+    isPoolItem: { type: Boolean, default: false },
+    pageId: { type: [String, Number], default: '' },
+    tag: { type: String, default: '' },
+    currentUser: { type: [Boolean, Object], default: false }
+})
 </script>
