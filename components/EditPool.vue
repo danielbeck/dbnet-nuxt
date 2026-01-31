@@ -55,6 +55,9 @@
                 <div v-if="thumbnailPreview" style="margin-top:0.5em;">
                     <img :src="thumbnailPreview" alt="Thumbnail" style="width:150px;height:150px;object-fit:cover;">
                 </div>
+                <div style="margin-top:0.5em;">
+                    <button type="button" v-if="(editable && editable.img) || imagePreview || thumbnailPreview" @click="clearImage">Remove image</button>
+                </div>
 
             </label>
             <!--
@@ -289,6 +292,15 @@ function onImageSelected(e) {
         thumbnailPreview.value = ev.target.result;
     };
     reader.readAsDataURL(file);
+}
+
+function clearImage() {
+    try {
+        if (editable && editable.value) editable.value.img = ''
+    } catch (e) { }
+    imagePreview.value = '';
+    thumbnailPreview.value = '';
+    selectedImageFile = null;
 }
 
 async function uploadImage(poolId) {
