@@ -34,9 +34,16 @@ export default defineEventHandler(async (event) => {
 
     // Save image file
     try {
-        fs.writeFileSync(imgPath, imageFile.data)
-        let sharpImg = sharp(imgPath)
+        let sharpImg = sharp(imageFile.data)
         const metadata = await sharpImg.metadata()
+
+        // Normalize and constrain the main image before writing to public/pool.
+        await sharpImg
+            .resize({ width: 4096, height: 4096, fit: 'inside', withoutEnlargement: true })
+            .jpeg({ quality: 90 })
+            .toFile(imgPath)
+
+        sharpImg = sharp(imgPath)
         let cropOptions = { left: 0, top: 0, width: Math.min(metadata.width, metadata.height), height: Math.min(metadata.width, metadata.height) }
         if (crop && crop.width && crop.height) {
             cropOptions = crop
