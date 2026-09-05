@@ -2,7 +2,7 @@
 export default [
     { name: "Home", id: "Home", path: "/" },
     { name: "Blog", id: "blog", path: "/blog/", tag: "blog" },
-    { name: "Geek", id: "geek", path: "/geek/", tag: "geek" },
+    { name: "Tech", id: "geek", path: "/geek/", tag: "geek" },
     { name: "Photos", id: "photos", path: "/photos/", tag: "photos" },
     { name: "Paintings", id: "paintings", path: "/paintings/", tag: "painting" },
     { name: "Fire", id: "burningman", path: "/photos/burningman/", tag: "fire" },
