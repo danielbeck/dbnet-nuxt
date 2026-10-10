@@ -9,9 +9,21 @@
     </div>
 </template>
 <script setup>
+import { computed } from 'vue'
+import { useHead, useRoute } from '#imports'
+import routes from '~/helpers/routes.mjs'
+import pool from './.cache/pool.json'
+import { resolveCanonicalUrl } from '~/helpers/resolveRoute.js'
 import MainMenu from "~/components/MainMenu.vue"
 import Footer from "~/components/Footer.vue"
 import SignIn from "~/components/SignIn.vue"
+
+const route = useRoute()
+const canonicalUrl = computed(() => resolveCanonicalUrl(route.path, routes, pool))
+
+useHead(() => ({
+    link: canonicalUrl.value ? [{ rel: 'canonical', href: canonicalUrl.value }] : []
+}))
 </script>
 
 <style src="~/helpers/global.scss" lang="scss"></style>

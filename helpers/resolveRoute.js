@@ -8,6 +8,19 @@ function normalizeSegments(p) {
     return String(p || '').replace(/^\//, '').replace(/\/$/, '').split('/').filter(Boolean)
 }
 
+export function resolveCanonicalUrl(path, routes, pool) {
+    const segments = normalizeSegments(path)
+    const section = routes.find(r => normalizeSegments(r.path).join('/') === segments.join('/'))
+        || (segments.length === 2 && segments[0] === 'page'
+            ? routes.find(r => String(r.id) === segments[1])
+            : null)
+    if (section) return `https://danielbeck.net${section.path}`
+
+    const resolved = resolveIdTag(segments, routes, pool)
+    const item = pool.find(p => resolved.id !== null && String(p.id) === String(resolved.id))
+    return item?.slug ? `https://danielbeck.net/archive/${item.slug}.html` : null
+}
+
 /**
  * Resolves {id, tag} for a given slugArr, routes, and pool
  * @param {string[]} slugArr - Array of path segments

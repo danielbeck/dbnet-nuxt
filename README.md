@@ -7,6 +7,7 @@ This is the Nuxt 3 static site version of dbnet. Unlike the original dbnet, this
 - All required API data is fetched and cached locally before generating the static site.
 - Static HTML is generated for each page using the cached data.
 - No repeated API/database calls during generation.
+- Canonical links use the configured homepage and section URLs (including their trailing slash). Legacy `/page/[id]` aliases point to the corresponding section, while article URLs point to `/archive/[slug].html`. Unrecognized routes do not declare a canonical.
 
 ## Usage
 

@@ -47,17 +47,7 @@ const resolved = computed(() => {
 })
 
 
-// Always use /archive/[slug].html for canonical
-const canonicalUrl = computed(() => {
-    let slug = slugArr.value.length ? slugArr.value[slugArr.value.length - 1] : ''
-    if (slug.endsWith('.html')) slug = slug.slice(0, -5)
-    return `https://danielbeck.net/archive/${slug}.html`
-})
-
 useHead({
-    title: computed(() => resolved.value?.title || 'Untitled'),
-    link: [
-        { rel: 'canonical', href: canonicalUrl }
-    ]
+    title: computed(() => resolved.value?.title || 'Untitled')
 })
 </script>
