@@ -116,7 +116,7 @@ function decodeBase64(s) {
     return s
 }
 
-onMounted(() => {
+onMounted(async () => {
     if (!root.value) return
     const instance = getCurrentInstance()
     const parentRouter = (() => { try { return useRouter() } catch { return null } })()
@@ -209,6 +209,34 @@ onMounted(() => {
         })
     } catch (e) {
         // ignore
+    }
+
+    const legacyMermaidBlocks = root.value.querySelectorAll('pre > code.language-mermaid')
+    legacyMermaidBlocks.forEach((code) => {
+        const pre = code.parentElement
+        if (!pre) return
+        const diagram = document.createElement('div')
+        diagram.className = 'mermaid'
+        diagram.textContent = code.textContent || ''
+        pre.replaceWith(diagram)
+    })
+
+    const mermaidDiagrams = Array.from(root.value.querySelectorAll('.mermaid'))
+    if (mermaidDiagrams.length) {
+        try {
+            const { default: mermaid } = await import('mermaid')
+            mermaid.initialize({ startOnLoad: false, securityLevel: 'strict' })
+            for (const diagram of mermaidDiagrams) {
+                try {
+                    await mermaid.run({ nodes: [diagram] })
+                } catch (e) {
+                    diagram.classList.add('mermaid-error')
+                    console.error('[CompiledContent] failed to render Mermaid diagram', e)
+                }
+            }
+        } catch (e) {
+            console.error('[CompiledContent] failed to load Mermaid', e)
+        }
     }
 })
 
@@ -343,3 +371,11 @@ function parseParts(input) {
 
 const parts = computed(() => parseParts(props.input || ''))
 </script>
+
+<style scoped>
+:deep(.mermaid svg) {
+    display: block;
+    height: auto;
+    max-width: 100%;
+}
+</style>

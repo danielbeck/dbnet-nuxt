@@ -95,8 +95,7 @@ import { ref, computed, watch, onBeforeMount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePoolStore } from '@/stores/pool'
 import { useUserStore } from '@/stores/user'
-import { marked } from 'marked'
-import { datetimeLocal, detectContentFormat, smartquotes, fixHtmlString } from '@/helpers/index.js'
+import { datetimeLocal, detectContentFormat, smartquotes, fixHtmlString, markdownToHtml } from '@/helpers/index.js'
 import * as parse5 from 'parse5'
 
 const props = defineProps({
@@ -341,7 +340,7 @@ async function save() {
     dataToSave.body = smartquotes(dataToSave.body);
     if (dataToSave.format === 'markdown') {
         // Convert markdown to HTML before saving
-        dataToSave.body = marked.parse(dataToSave.body || '');
+        dataToSave.body = markdownToHtml(dataToSave.body);
     }
     const result = await poolStore.edit(dataToSave);
     if (result && !result.success && result.error === 'duplicate-slug') {

@@ -2,9 +2,26 @@ import { marked } from 'marked';
 import dateFormat from 'dateformat';
 import * as parse5 from 'parse5';
 
+function escapeHtml(text) {
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // Convert markdown to HTML (shared helper)
 function markdownToHtml(md) {
-    return marked.parse(md || '');
+    return marked.parse(md || '', {
+        renderer: {
+            code({ text, lang }) {
+                const language = (lang || '').trim().split(/\s+/, 1)[0].toLowerCase();
+                if (language !== 'mermaid') return false;
+                return `<div class="mermaid">${escapeHtml(text)}</div>\n`;
+            },
+        },
+    });
 }
 
 const formatDate = (d, fmt) => {
