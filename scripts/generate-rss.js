@@ -8,6 +8,17 @@ import { fixHtmlString } from '../helpers/index.js';
 
 const API_HOST = process.env.API_HOST || 'https://danielbeck.net';
 const OUT_DIR = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'dist');
+const HTACCESS_CONTENT = `# Return plain 404s instead of "similar documents" lists
+<IfModule mod_speling.c>
+  CheckSpelling Off
+</IfModule>
+
+# Never serve hidden files or folders (.env, .git, .config, etc.)
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule (^|/)\\. - [F]
+</IfModule>
+`;
 
 function fetchPool() {
     return new Promise((resolve, reject) => {
@@ -87,7 +98,8 @@ async function main() {
         fs.writeFileSync(path.join(OUT_DIR, 'rss-blog.xml'), rssBlog);
         fs.writeFileSync(path.join(OUT_DIR, 'rss-photos.xml'), rssPhotos);
         fs.writeFileSync(path.join(OUT_DIR, 'rss-geek.xml'), rssGeek);
-        console.log('RSS feeds generated.');
+        fs.writeFileSync(path.join(OUT_DIR, '.htaccess'), HTACCESS_CONTENT);
+        console.log('RSS feeds and .htaccess generated.');
     } catch (e) {
         console.error('Failed to generate RSS:', e);
         process.exit(1);

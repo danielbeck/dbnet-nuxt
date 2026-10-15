@@ -41,7 +41,7 @@ This runs `npm run generate` and then `./scripts/deploy.sh` to rsync `dist/` and
 - `clean`: Removes build and output artifacts (`.output`, `.nuxt`, `.vite`, `dist/*`).
 - `dev`: Runs `node scripts/generate-pool-cache.js && node scripts/generate-page-cache.js && nuxt dev` — generates local `.cache` data then starts Nuxt in development mode with hot-reload.
 - `generate`: Runs `nuxt generate` to prerender the site using `.cache` data.
-- `postgenerate`: Runs `node scripts/generate-rss.js && node scripts/generate-sitemap.js` (invoked automatically after `npm run generate`) to emit RSS feeds and `sitemap.txt` into the `dist/` output.
+- `postgenerate`: Runs `node scripts/generate-rss.js && node scripts/generate-sitemap.js` (invoked automatically after `npm run generate`) to emit RSS feeds, `.htaccess`, and `sitemap.txt` into the `dist/` output.
 - `preview`: Runs `nuxt preview` to locally preview a production build from `.output`.
 - `deploy`: Runs `npm run generate` and then `./scripts/deploy.sh` to push `dist/` and `public/api/` to the remote host.
 - `postinstall`: Nuxt prepare hook (runs `nuxt prepare` after install).
@@ -50,7 +50,7 @@ This runs `npm run generate` and then `./scripts/deploy.sh` to rsync `dist/` and
 
 - `scripts/generate-pool-cache.js`: Fetches `/api/pool.php` and writes the response to `./.cache/pool.json`. Used by dev and static generation to provide pool data offline.
 - `scripts/generate-page-cache.js`: Fetches `/api/page.php` and writes the response to `./.cache/pages.json`. Used by dev and static generation to provide page metadata.
-- `scripts/generate-rss.js`: Builds RSS feeds (`rss.xml`, `rss-blog.xml`, `rss-photos.xml`, `rss-geek.xml`) in `dist/` from the pool API data. Run automatically after `npm run generate` via `postgenerate`.
+- `scripts/generate-rss.js`: Builds RSS feeds (`rss.xml`, `rss-blog.xml`, `rss-photos.xml`, `rss-geek.xml`) in `dist/` from the pool API data and writes the root `.htaccess` rules. Run automatically after `npm run generate` via `postgenerate`.
 - `scripts/generate-sitemap.js`: Builds `dist/sitemap.txt` containing the homepage, canonical section routes, and one `/archive/[slug].html` URL per pool entry. Section-specific article aliases are excluded and URLs are deduplicated. Run automatically after `npm run generate` via `postgenerate`.
 - `scripts/deploy.sh`: An rsync-based deploy script that dry-runs then optionally syncs `dist/` and `public/api/` to the remote server configured inside the script. Run with `./scripts/deploy.sh` or via `npm run deploy`.
 
